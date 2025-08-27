@@ -442,60 +442,6 @@ export type Database = {
         }
         Relationships: []
       }
-      strongs_lexicon: {
-        Row: {
-          compare: string[] | null
-          definition_lit: string | null
-          definition_long: string | null
-          definition_short: string | null
-          derivation: string | null
-          extra: Json | null
-          language: string
-          lemma: string | null
-          notes: string | null
-          part_of_speech: string | null
-          pronunciations: string[] | null
-          raw: string | null
-          see_also: string[] | null
-          strongs_number: string
-          transliterations: string[] | null
-        }
-        Insert: {
-          compare?: string[] | null
-          definition_lit?: string | null
-          definition_long?: string | null
-          definition_short?: string | null
-          derivation?: string | null
-          extra?: Json | null
-          language: string
-          lemma?: string | null
-          notes?: string | null
-          part_of_speech?: string | null
-          pronunciations?: string[] | null
-          raw?: string | null
-          see_also?: string[] | null
-          strongs_number: string
-          transliterations?: string[] | null
-        }
-        Update: {
-          compare?: string[] | null
-          definition_lit?: string | null
-          definition_long?: string | null
-          definition_short?: string | null
-          derivation?: string | null
-          extra?: Json | null
-          language?: string
-          lemma?: string | null
-          notes?: string | null
-          part_of_speech?: string | null
-          pronunciations?: string[] | null
-          raw?: string | null
-          see_also?: string[] | null
-          strongs_number?: string
-          transliterations?: string[] | null
-        }
-        Relationships: []
-      }
       strongs_mappings: {
         Row: {
           created_at: string
@@ -989,14 +935,6 @@ export type Database = {
           osis: string
           verse_id: string
         }[]
-      }
-      norm_strongs: {
-        Args: { p: string }
-        Returns: string
-      }
-      norm_strongs_core: {
-        Args: { p: string }
-        Returns: string
       }
       osis_head_for_book: {
         Args: { p_book_id: string }

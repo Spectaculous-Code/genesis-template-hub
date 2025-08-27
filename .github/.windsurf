@@ -1,0 +1,31 @@
+# Windsurf Rules
+
+1) Always load context first:
+   - @/Docs/01-PRD.md
+   - @/Docs/02-DESIGN.md
+   - @/Docs/03-API.md
+   - @/Docs/04-DEV-WORKFLOW.md
+
+2) Workflow = Plan → Patch → Stop.
+   - Show unified diffs; no direct file writes without preview.
+   - Never delete/move files without explicit approval.
+
+3) Tech constraints:
+   - Vite + React + TS + shadcn + Tailwind only.
+   - Supabase client from src/lib/supabase.ts; no ad-hoc fetch to DB.
+   - Use React Query for server data; Zod for DTOs.
+
+4) Testing & Quality:
+   - Add/maintain Vitest + Playwright tests.
+   - Fix lints/types; if Cascade introduces lints, auto-fix (Cascade). 
+
+5) Security & Privacy:
+   - No secrets in code.
+   - Respect RLS; server-side checks on mutations.
+
+6) Documentation:
+   - When changing behavior, update PRD or DESIGN accordingly.
+
+7) Communication:
+   - Be concise. Provide assumptions + rollback plan for risky changes.
+
