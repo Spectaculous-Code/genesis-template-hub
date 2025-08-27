@@ -2,15 +2,11 @@
 import { useState, useEffect } from "react";
 import { 
   Book, 
-  Search, 
-  History, 
   Play, 
   FileText, 
   BookOpen, 
   Star, 
   Highlighter,
-  ChevronDown,
-  ChevronRight,
   User
 } from "lucide-react";
 import {
@@ -26,17 +22,13 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getFinnishBookName } from "@/lib/bookNameMapping";
 import UserMenu from "@/components/UserMenu";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AppSidebarProps {
-  onNavigateToSearch: (query: string) => void;
   onNavigateToContinueAudio: () => void;
   onNavigateToContinueText: (book?: string, chapter?: number) => void;
   onNavigateToSummaries: () => void;
@@ -50,7 +42,6 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({
-  onNavigateToSearch,
   onNavigateToContinueAudio,
   onNavigateToContinueText,
   onNavigateToSummaries,
@@ -60,14 +51,11 @@ export function AppSidebar({
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [lastAudioPosition, setLastAudioPosition] = useState<string>("Ei viimeisintä");
   const [lastTextPosition, setLastTextPosition] = useState<string>("Ei viimeisintä");
   const [lastReadingData, setLastReadingData] = useState<any>(null);
   const [summariesCount, setSummariesCount] = useState(0);
   const [highlightsCount, setHighlightsCount] = useState(0);
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -158,29 +146,6 @@ export function AppSidebar({
     }
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      onNavigateToSearch(searchQuery.trim());
-      toast({
-        title: "Haku käynnistetty",
-        description: `Haetaan: "${searchQuery}"`,
-      });
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
-  const mockSearchHistory = [
-    "Rakkaus",
-    "Usko",
-    "Toivo",
-    "Matt 5:14",
-    "Psalm 23"
-  ];
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
@@ -203,59 +168,6 @@ export function AppSidebar({
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Search */}
-              <SidebarMenuItem>
-                <Collapsible open={showSearchHistory} onOpenChange={setShowSearchHistory}>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                      {!collapsed && (
-                        <div className="flex-1 flex items-center gap-1">
-                          <Input
-                            placeholder="Haku..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            className="h-8"
-                          />
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              {showSearchHistory ? (
-                                <ChevronDown className="h-3 w-3" />
-                              ) : (
-                                <ChevronRight className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </CollapsibleTrigger>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {!collapsed && (
-                      <CollapsibleContent className="ml-6">
-                        <div className="space-y-1">
-                          <div className="text-xs text-muted-foreground mb-2">Hakuhistoria</div>
-                          {mockSearchHistory.map((item, index) => (
-                            <Button
-                              key={index}
-                              variant="ghost"
-                              size="sm"
-                              className="w-full justify-start h-7 text-xs"
-                              onClick={() => {
-                                setSearchQuery(item);
-                                onNavigateToSearch(item);
-                              }}
-                            >
-                              <History className="mr-2 h-3 w-3" />
-                              {item}
-                            </Button>
-                          ))}
-                        </div>
-                      </CollapsibleContent>
-                    )}
-                  </div>
-                </Collapsible>
-              </SidebarMenuItem>
 
               {/* Continue Audio */}
               <SidebarMenuItem>

@@ -88,7 +88,6 @@ const Index = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar 
-          onNavigateToSearch={handleNavigateToSearch}
           onNavigateToContinueAudio={handleNavigateToContinueAudio}
           onNavigateToContinueText={handleNavigateToContinueText}
           onNavigateToSummaries={handleNavigateToSummaries}
