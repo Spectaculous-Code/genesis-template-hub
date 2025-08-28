@@ -149,9 +149,6 @@ export function AppSidebar({
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
-      <SidebarHeader className="border-b border-border p-4">
-      </SidebarHeader>
-
       <SidebarContent>
         {/* Raamattu Section */}
         <SidebarGroup>
