@@ -150,18 +150,18 @@ export function AppSidebar({
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
       <SidebarHeader className="border-b border-border p-4">
-        <div className="flex items-center justify-end">
-          <SidebarTrigger className="h-6 w-6" />
-        </div>
       </SidebarHeader>
 
       <SidebarContent>
         {/* Raamattu Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">
-            <Book className="mr-2 h-4 w-4" />
-            {!collapsed && "RAAMATTUNI"}
-          </SidebarGroupLabel>
+          <div className="flex items-center justify-between px-3 py-2">
+            <SidebarGroupLabel className="text-primary font-semibold flex items-center">
+              <Book className="mr-2 h-4 w-4" />
+              {!collapsed && "RAAMATTUNI"}
+            </SidebarGroupLabel>
+            <SidebarTrigger className="h-6 w-6" />
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
 
