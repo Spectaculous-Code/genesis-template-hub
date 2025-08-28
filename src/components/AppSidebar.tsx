@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getFinnishBookName } from "@/lib/bookNameMapping";
-import UserMenu from "@/components/UserMenu";
+
 import { useAuth } from "@/hooks/useAuth";
 
 interface AppSidebarProps {
@@ -152,10 +152,7 @@ export function AppSidebar({
       <SidebarHeader className="border-b border-border p-4">
         <div className="flex items-center justify-between">
           {!collapsed && <h1 className="text-lg font-semibold text-foreground">Raamattu Nyt</h1>}
-          <div className="flex items-center gap-2">
-            {!collapsed && <UserMenu />}
-            <SidebarTrigger className="h-6 w-6" />
-          </div>
+          <SidebarTrigger className="h-6 w-6" />
         </div>
       </SidebarHeader>
 

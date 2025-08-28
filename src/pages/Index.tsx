@@ -5,7 +5,9 @@ import { AppSidebar } from "@/components/AppSidebar";
 import MainContent from "@/components/MainContent";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import UserMenu from "@/components/UserMenu";
 
 const Index = () => {
   const [selectedBook, setSelectedBook] = useState("");
@@ -99,9 +101,11 @@ const Index = () => {
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center justify-between">
+              <div></div>
               
               <div className="flex items-center gap-4">
-                <Link 
+                <UserMenu />
+                <Link
                   to="/" 
                   className="text-xl font-bold text-foreground hover:text-primary transition-colors"
                 >
