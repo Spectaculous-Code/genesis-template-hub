@@ -104,7 +104,6 @@ const Index = () => {
               <div></div>
               
               <div className="flex items-center gap-4">
-                <UserMenu />
                 <Link
                   to="/" 
                   className="text-xl font-bold text-foreground hover:text-primary transition-colors"
@@ -122,6 +121,8 @@ const Index = () => {
                     onKeyPress={handleTopSearchKeyPress}
                   />
                 </div>
+                
+                <UserMenu />
               </div>
             </div>
           </header>
