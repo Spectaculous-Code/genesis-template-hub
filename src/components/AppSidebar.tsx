@@ -236,9 +236,11 @@ export function AppSidebar({
 
               {/* My Summaries */}
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={onNavigateToSummaries}>
-                  <FileText className="h-4 w-4" />
-                  {!collapsed && <span>Koosteeni ({summariesCount} kpl)</span>}
+                <SidebarMenuButton asChild>
+                  <Link to="/profile?tab=summaries">
+                    <FileText className="h-4 w-4" />
+                    {!collapsed && <span>Koosteeni ({summariesCount} kpl)</span>}
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 

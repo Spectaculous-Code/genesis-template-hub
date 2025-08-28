@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Settings, FileText, Highlighter, BookOpen, Headphones, Calendar, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import UserSummaries from '@/components/UserSummaries';
 import UserHighlights from '@/components/UserHighlights';
 import UserReadingHistory from '@/components/UserReadingHistory';
@@ -17,9 +17,14 @@ const ProfilePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || '');
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Get tab from URL params, default to "reading-history"
+  const urlParams = new URLSearchParams(location.search);
+  const activeTab = urlParams.get('tab') || 'reading-history';
 
   const handleSearch = (query: string) => {
     if (query.trim()) {
@@ -123,7 +128,7 @@ const ProfilePage = () => {
           <p className="text-muted-foreground">Hallitse profiiliasi ja näe aktiviteettisi</p>
         </div>
 
-        <Tabs defaultValue="reading-history" className="space-y-4">
+        <Tabs value={activeTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="reading-history" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
