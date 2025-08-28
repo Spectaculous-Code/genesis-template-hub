@@ -80,6 +80,13 @@ const ProfilePage = () => {
               Kirjaudu sisään nähdäksesi profiilisi
             </CardDescription>
           </CardHeader>
+          <CardContent className="text-center">
+            <Link to="/auth">
+              <Button className="w-full">
+                Kirjaudu sisään
+              </Button>
+            </Link>
+          </CardContent>
         </Card>
       </div>
     );
