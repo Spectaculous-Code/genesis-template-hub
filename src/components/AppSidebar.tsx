@@ -25,8 +25,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getFinnishBookName } from "@/lib/bookNameMapping";
-
 import { useAuth } from "@/hooks/useAuth";
+import { Link } from "react-router-dom";
 
 interface AppSidebarProps {
   onNavigateToContinueAudio: () => void;
@@ -226,11 +226,11 @@ export function AppSidebar({
             <SidebarMenu>
               {/* Profile */}
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => window.location.href = '/profile'}
-                >
-                  <User className="h-4 w-4" />
-                  {!collapsed && <span>Profiili</span>}
+                <SidebarMenuButton asChild>
+                  <Link to="/profile">
+                    <User className="h-4 w-4" />
+                    {!collapsed && <span>Profiili</span>}
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
