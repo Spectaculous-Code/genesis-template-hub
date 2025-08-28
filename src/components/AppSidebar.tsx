@@ -150,8 +150,7 @@ export function AppSidebar({
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
       <SidebarHeader className="border-b border-border p-4">
-        <div className="flex items-center justify-between">
-          {!collapsed && <h1 className="text-lg font-semibold text-foreground">Raamattu Nyt</h1>}
+        <div className="flex items-center justify-end">
           <SidebarTrigger className="h-6 w-6" />
         </div>
       </SidebarHeader>
