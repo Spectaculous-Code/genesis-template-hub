@@ -1,6 +1,6 @@
 // Main application entry point
 import { useState } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import MainContent from "@/components/MainContent";
 import { Input } from "@/components/ui/input";
@@ -101,7 +101,9 @@ const Index = () => {
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center justify-between">
-              <div></div>
+              <div className="flex items-center">
+                <SidebarTrigger className="mr-2" />
+              </div>
               
               <div className="flex items-center gap-4">
                 <Link
