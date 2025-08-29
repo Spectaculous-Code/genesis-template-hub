@@ -160,7 +160,7 @@ export function AppSidebar({
         <SidebarGroup>
           <SidebarGroupLabel className="text-primary font-semibold flex items-center px-3">
             <Book className="mr-2 h-4 w-4" />
-            {!collapsed && "RAAMATTUNI"}
+            {!collapsed && "Raamattu nyt"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
