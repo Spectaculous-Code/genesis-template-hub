@@ -265,40 +265,50 @@ export function AppSidebar({
             {!collapsed && "FOKUS"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <div className="px-2">
-              {selectedVerse ? (
-                <div className="border border-border rounded-lg p-3 bg-muted/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-medium text-muted-foreground">
-                      {getFinnishBookName(selectedVerse.bookName)} {selectedVerse.chapter}:{selectedVerse.verse}
+            {collapsed ? (
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton>
+                    <Star className="h-4 w-4" />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            ) : (
+              <div className="px-2">
+                {selectedVerse ? (
+                  <div className="border border-border rounded-lg p-3 bg-muted/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {getFinnishBookName(selectedVerse.bookName)} {selectedVerse.chapter}:{selectedVerse.verse}
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          // Get the English book name for the URL
+                          const englishBookName = selectedVerse.bookName;
+                          console.log('Navigating to study page with book:', englishBookName);
+                          window.location.href = `/study/${englishBookName}/${selectedVerse.chapter}/${selectedVerse.verse}`;
+                        }}
+                      >
+                        <BookOpen className="h-3 w-3 mr-1" />
+                        TUTKI
+                      </Button>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-6 px-2 text-xs"
-                      onClick={() => {
-                        // Get the English book name for the URL
-                        const englishBookName = selectedVerse.bookName;
-                        console.log('Navigating to study page with book:', englishBookName);
-                        window.location.href = `/study/${englishBookName}/${selectedVerse.chapter}/${selectedVerse.verse}`;
-                      }}
-                    >
-                      <BookOpen className="h-3 w-3 mr-1" />
-                      TUTKI
-                    </Button>
+                    <div className="text-sm leading-relaxed text-foreground">
+                      {selectedVerse.text}
+                    </div>
                   </div>
-                  <div className="text-sm leading-relaxed text-foreground">
-                    {selectedVerse.text}
+                ) : (
+                  <div className="border border-dashed border-muted-foreground/30 rounded-lg p-3 text-center">
+                    <div className="text-xs text-muted-foreground">
+                      Valitse jae korostettavaksi
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="border border-dashed border-muted-foreground/30 rounded-lg p-3 text-center">
-                  <div className="text-xs text-muted-foreground">
-                    {!collapsed ? "Valitse jae korostettavaksi" : "Ei valintaa"}
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
