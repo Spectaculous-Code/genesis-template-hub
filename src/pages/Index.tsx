@@ -101,8 +101,7 @@ const Index = () => {
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <SidebarTrigger className="mr-2" />
+            <div className="flex items-center">
               </div>
               
               <div className="flex items-center gap-4">
