@@ -6,10 +6,13 @@ import MainContent from "@/components/MainContent";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import UserMenu from "@/components/UserMenu";
+import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { latestPosition } = useLatestReadingPosition();
   const [selectedBook, setSelectedBook] = useState("");
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [targetVerse, setTargetVerse] = useState<number | undefined>();
@@ -67,6 +70,19 @@ const Index = () => {
     setCurrentView('bible');
   };
 
+  const handleAppTitleClick = () => {
+    if (latestPosition) {
+      // Navigate to latest reading position
+      setSelectedBook(latestPosition.bookName);
+      setSelectedChapter(latestPosition.chapter);
+      setTargetVerse(latestPosition.verse);
+      setCurrentView('bible');
+    } else {
+      // Fallback to home
+      navigate('/');
+    }
+  };
+
   const [topSearchQuery, setTopSearchQuery] = useState("");
 
   const handleVerseSelect = (bookName: string, chapter: number, verse: number, text: string) => {
@@ -112,12 +128,12 @@ const Index = () => {
                 />
               </div>
               
-              <Link
-                to="/" 
-                className="text-xl font-bold text-foreground hover:text-primary transition-colors whitespace-nowrap"
-              >
-                Raamattu Nyt
-              </Link>
+                <button
+                  onClick={handleAppTitleClick}
+                  className="text-xl font-bold text-foreground hover:text-primary transition-colors whitespace-nowrap"
+                >
+                  Raamattu Nyt
+                </button>
               
               <UserMenu />
             </div>
