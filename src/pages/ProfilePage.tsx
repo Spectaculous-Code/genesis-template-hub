@@ -26,6 +26,10 @@ const ProfilePage = () => {
   const urlParams = new URLSearchParams(location.search);
   const activeTab = urlParams.get('tab') || 'reading-history';
 
+  const handleTabChange = (value: string) => {
+    navigate(`/profile?tab=${value}`);
+  };
+
   const handleSearch = (query: string) => {
     if (query.trim()) {
       // Navigate to home with search query
@@ -128,7 +132,7 @@ const ProfilePage = () => {
           <p className="text-muted-foreground">Hallitse profiiliasi ja näe aktiviteettisi</p>
         </div>
 
-        <Tabs value={activeTab} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="reading-history" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
