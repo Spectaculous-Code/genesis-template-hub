@@ -100,31 +100,26 @@ const Index = () => {
         <div className="flex-1 flex flex-col">
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
-            <div className="flex items-center justify-between">
-            <div className="flex items-center">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-lg">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Vapaa haku..."
+                  className="pl-10"
+                  value={topSearchQuery}
+                  onChange={(e) => setTopSearchQuery(e.target.value)}
+                  onKeyPress={handleTopSearchKeyPress}
+                />
               </div>
               
-              <div className="flex items-center gap-4">
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Vapaa haku..."
-                    className="pl-10"
-                    value={topSearchQuery}
-                    onChange={(e) => setTopSearchQuery(e.target.value)}
-                    onKeyPress={handleTopSearchKeyPress}
-                  />
-                </div>
-                
-                <Link
-                  to="/" 
-                  className="text-xl font-bold text-foreground hover:text-primary transition-colors"
-                >
-                  Raamattu Nyt
-                </Link>
-                
-                <UserMenu />
-              </div>
+              <Link
+                to="/" 
+                className="text-xl font-bold text-foreground hover:text-primary transition-colors whitespace-nowrap"
+              >
+                Raamattu Nyt
+              </Link>
+              
+              <UserMenu />
             </div>
           </header>
 
