@@ -7,6 +7,8 @@ import { getChapterData, ChapterWithVerses, getNextChapter, getPreviousChapter, 
 import { getFinnishBookName } from "@/lib/bookNameMapping";
 import VerseHighlighter from "./VerseHighlighter";
 import InfoBox, { generateNextChapterInfo } from "./InfoBox";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BibleReaderProps {
   book: string;
@@ -20,6 +22,7 @@ interface BibleReaderProps {
 }
 
 const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true }: BibleReaderProps) => {
+  const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentVerse, setCurrentVerse] = useState(1);
   const [highlights, setHighlights] = useState<Set<number>>(new Set());
@@ -33,8 +36,8 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
-  // Function to save reading position to localStorage
-  const saveReadingPosition = (bookName: string, chapterNum: number, version: string) => {
+  // Function to save reading position to localStorage and database
+  const saveReadingPosition = async (bookName: string, chapterNum: number, version: string) => {
     const currentPosition = {
       book: bookName,
       chapter: chapterNum,
@@ -44,6 +47,45 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
     };
     localStorage.setItem('lastReadingPosition', JSON.stringify(currentPosition));
     console.log('Saved reading position:', currentPosition);
+
+    // Also save to database if user is authenticated
+    if (user) {
+      try {
+        // First get the version ID
+        const { data: versionData } = await supabase
+          .from('bible_versions')
+          .select('id')
+          .eq('code', version)
+          .single();
+
+        if (versionData) {
+          // Then get the book data
+          const { data: bookData } = await supabase
+            .from('books')
+            .select('id')
+            .eq('name', bookName)
+            .eq('version_id', versionData.id)
+            .single();
+
+          if (bookData) {
+            // Save to user_reading_history
+            await supabase
+              .from('user_reading_history')
+              .upsert({
+                user_id: user.id,
+                book_id: bookData.id,
+                version_id: versionData.id,
+                chapter_number: chapterNum,
+                verse_number: 1, // Default to verse 1
+                last_read_at: new Date().toISOString(),
+                history_type: 'read'
+              });
+          }
+        }
+      } catch (error) {
+        console.error('Error saving reading history to database:', error);
+      }
+    }
   };
 
   useEffect(() => {
@@ -55,7 +97,7 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       
       // Only save reading position if it's not the initial load or if user is intentionally navigating
       if (data && (!isInitialLoad || isNavigating)) {
-        saveReadingPosition(book, chapter, versionCode);
+        await saveReadingPosition(book, chapter, versionCode);
       }
       
       // Mark that initial load is complete

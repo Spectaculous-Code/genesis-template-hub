@@ -1,17 +1,18 @@
 // Main application entry point
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import MainContent from "@/components/MainContent";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import UserMenu from "@/components/UserMenu";
 import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { latestPosition } = useLatestReadingPosition();
   const [selectedBook, setSelectedBook] = useState("");
   const [selectedChapter, setSelectedChapter] = useState(1);
@@ -24,6 +25,27 @@ const Index = () => {
     verse: number;
     text: string;
   } | null>(null);
+
+  // Handle URL parameters for navigation from history
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const bookParam = urlParams.get('book');
+    const chapterParam = urlParams.get('chapter');
+    const verseParam = urlParams.get('verse');
+    const searchParam = urlParams.get('search');
+
+    if (bookParam && chapterParam) {
+      setSelectedBook(bookParam);
+      setSelectedChapter(parseInt(chapterParam));
+      if (verseParam) {
+        setTargetVerse(parseInt(verseParam));
+      }
+      setCurrentView('bible');
+    } else if (searchParam) {
+      setSearchQuery(searchParam);
+      setCurrentView('search');
+    }
+  }, [location.search]);
 
   const handleBookSelect = (book: string) => {
     setSelectedBook(book);

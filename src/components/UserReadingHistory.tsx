@@ -135,8 +135,8 @@ const UserReadingHistory = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // Navigate to the verse - this would need proper routing implementation
-                    console.log('Navigate to verse:', item);
+                    // Navigate to the verse by opening the main page with proper parameters
+                    window.location.href = `/?book=${encodeURIComponent(item.book.name)}&chapter=${item.chapter_number}&verse=${item.verse_number}`;
                   }}
                 >
                   Avaa jae
