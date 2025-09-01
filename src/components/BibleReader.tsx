@@ -19,9 +19,11 @@ interface BibleReaderProps {
   onChapterSelect: (chapter: number) => void;
   onVerseSelect: (bookName: string, chapter: number, verse: number, text: string) => void;
   showNextChapterInfo?: boolean;
+  isAppTitleNavigation?: boolean;
+  onNavigationComplete?: () => void;
 }
 
-const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true }: BibleReaderProps) => {
+const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete }: BibleReaderProps) => {
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentVerse, setCurrentVerse] = useState(1);
@@ -95,14 +97,19 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       setChapterData(data);
       setLoading(false);
       
-      // Only save reading position if it's not the initial load or if user is intentionally navigating
-      if (data && (!isInitialLoad || isNavigating)) {
+      // Only save reading position if it's not the initial load, app title navigation, or if user is intentionally navigating
+      if (data && (!isInitialLoad || isNavigating) && !isAppTitleNavigation) {
         await saveReadingPosition(book, chapter, versionCode);
       }
       
       // Mark that initial load is complete
       if (isInitialLoad) {
         setIsInitialLoad(false);
+      }
+      
+      // Call navigation complete callback if provided
+      if (isAppTitleNavigation && onNavigationComplete) {
+        onNavigationComplete();
       }
       
       // Only show next chapter info if explicitly enabled and not navigating programmatically

@@ -25,6 +25,7 @@ const Index = () => {
     verse: number;
     text: string;
   } | null>(null);
+  const [isAppTitleNavigation, setIsAppTitleNavigation] = useState(false);
 
   // Handle URL parameters for navigation from history
   useEffect(() => {
@@ -94,7 +95,8 @@ const Index = () => {
 
   const handleAppTitleClick = () => {
     if (latestPosition) {
-      // Navigate to latest reading position
+      // Navigate to latest reading position without saving
+      setIsAppTitleNavigation(true);
       setSelectedBook(latestPosition.bookName);
       setSelectedChapter(latestPosition.chapter);
       setTargetVerse(latestPosition.verse);
@@ -171,6 +173,8 @@ const Index = () => {
             onVerseSelect={handleVerseSelect}
             currentView={currentView}
             searchQuery={searchQuery}
+            isAppTitleNavigation={isAppTitleNavigation}
+            onNavigationComplete={() => setIsAppTitleNavigation(false)}
           />
         </div>
       </div>

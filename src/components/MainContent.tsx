@@ -29,6 +29,8 @@ interface MainContentProps {
   onVerseSelect: (bookName: string, chapter: number, verse: number, text: string) => void;
   currentView: 'bible' | 'search' | 'summaries' | 'highlights';
   searchQuery?: string;
+  isAppTitleNavigation?: boolean;
+  onNavigationComplete?: () => void;
 }
 
 const MainContent = ({
@@ -40,7 +42,9 @@ const MainContent = ({
   onNavigateToVerse,
   onVerseSelect,
   currentView,
-  searchQuery = ""
+  searchQuery = "",
+  isAppTitleNavigation = false,
+  onNavigationComplete
 }: MainContentProps) => {
   const [bibleBooks, setBibleBooks] = useState<BibleBook[]>([]);
   const [bibleVersions, setBibleVersions] = useState<BibleVersion[]>([]);
@@ -184,6 +188,8 @@ const MainContent = ({
             onChapterSelect={onChapterSelect}
             onVerseSelect={onVerseSelect}
             showNextChapterInfo={false}
+            isAppTitleNavigation={isAppTitleNavigation}
+            onNavigationComplete={onNavigationComplete}
           />
         );
     }
