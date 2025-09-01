@@ -29,6 +29,7 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
   const [showInfoBox, setShowInfoBox] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
@@ -52,9 +53,14 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       setChapterData(data);
       setLoading(false);
       
-      // Save current reading position to localStorage
-      if (data) {
+      // Only save reading position if it's not the initial load or if user is intentionally navigating
+      if (data && (!isInitialLoad || isNavigating)) {
         saveReadingPosition(book, chapter, versionCode);
+      }
+      
+      // Mark that initial load is complete
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
       }
       
       // Only show next chapter info if explicitly enabled and not navigating programmatically
