@@ -94,16 +94,23 @@ const Index = () => {
   };
 
   const handleAppTitleClick = () => {
+    console.log('App title clicked, latestPosition:', latestPosition);
     if (latestPosition) {
       // Navigate to latest reading position without saving
+      console.log('Navigating to latest position:', latestPosition);
       setIsAppTitleNavigation(true);
       setSelectedBook(latestPosition.bookName);
       setSelectedChapter(latestPosition.chapter);
       setTargetVerse(latestPosition.verse);
       setCurrentView('bible');
     } else {
-      // Fallback to home
-      navigate('/');
+      // Fallback to Genesis 1 if no reading history
+      console.log('No latest position, falling back to Genesis 1');
+      setIsAppTitleNavigation(true);
+      setSelectedBook('Genesis');
+      setSelectedChapter(1);
+      setTargetVerse(undefined);
+      setCurrentView('bible');
     }
   };
 
