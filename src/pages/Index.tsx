@@ -160,15 +160,18 @@ const Index = () => {
                 />
               </div>
               
+              <div className="flex-shrink-0">
                 <button
                   onClick={() => {
                     console.log('Button clicked!');
                     handleAppTitleClick();
                   }}
-                  className="text-xl font-bold text-foreground hover:text-primary transition-colors whitespace-nowrap"
+                  className="text-xl font-bold text-foreground hover:text-primary transition-colors whitespace-nowrap px-4 py-2 rounded hover:bg-accent"
+                  style={{ pointerEvents: 'auto', zIndex: 10 }}
                 >
                   Raamattu Nyt
                 </button>
+              </div>
               
               <UserMenu />
             </div>
