@@ -150,9 +150,9 @@ export function AppSidebar({
       <SidebarContent>
         {/* Raamattu Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold flex items-center px-3">
+          <SidebarGroupLabel className="text-primary font-bold text-sm tracking-wide flex items-center px-3 py-2">
             <Book className="mr-2 h-4 w-4" />
-            {!collapsed && "Raamattu nyt"}
+            {!collapsed && "RAAMATTU NYT"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -213,7 +213,7 @@ export function AppSidebar({
 
         {/* Sisältöni Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">
+          <SidebarGroupLabel className="text-primary font-bold text-sm tracking-wide flex items-center px-3 py-2">
             <Star className="mr-2 h-4 w-4" />
             {!collapsed && "SISÄLTÖNI"}
           </SidebarGroupLabel>
@@ -252,7 +252,7 @@ export function AppSidebar({
 
         {/* Fokus Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-semibold">
+          <SidebarGroupLabel className="text-primary font-bold text-sm tracking-wide flex items-center px-3 py-2">
             <Star className="mr-2 h-4 w-4" />
             {!collapsed && "FOKUS"}
           </SidebarGroupLabel>
