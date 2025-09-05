@@ -161,7 +161,10 @@ const Index = () => {
               </div>
               
                 <button
-                  onClick={handleAppTitleClick}
+                  onClick={() => {
+                    console.log('Button clicked!');
+                    handleAppTitleClick();
+                  }}
                   className="text-xl font-bold text-foreground hover:text-primary transition-colors whitespace-nowrap"
                 >
                   Raamattu Nyt
