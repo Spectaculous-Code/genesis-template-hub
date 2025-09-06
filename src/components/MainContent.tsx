@@ -46,6 +46,7 @@ const MainContent = ({
   isAppTitleNavigation = false,
   onNavigationComplete
 }: MainContentProps) => {
+  console.log('MainContent render - isAppTitleNavigation:', isAppTitleNavigation);
   const [bibleBooks, setBibleBooks] = useState<BibleBook[]>([]);
   const [bibleVersions, setBibleVersions] = useState<BibleVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string>("");

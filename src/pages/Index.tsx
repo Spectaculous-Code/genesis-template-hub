@@ -98,6 +98,7 @@ const Index = () => {
     if (latestPosition) {
       // Navigate to latest reading position without saving
       console.log('Navigating to latest position:', latestPosition);
+      console.log('Setting isAppTitleNavigation to TRUE');
       setIsAppTitleNavigation(true);
       setSelectedBook(latestPosition.bookName);
       setSelectedChapter(latestPosition.chapter);
@@ -106,6 +107,7 @@ const Index = () => {
     } else {
       // Fallback to Genesis 1 if no reading history
       console.log('No latest position, falling back to Genesis 1');
+      console.log('Setting isAppTitleNavigation to TRUE');
       setIsAppTitleNavigation(true);
       setSelectedBook('Genesis');
       setSelectedChapter(1);
@@ -186,7 +188,10 @@ const Index = () => {
             currentView={currentView}
             searchQuery={searchQuery}
             isAppTitleNavigation={isAppTitleNavigation}
-            onNavigationComplete={() => setIsAppTitleNavigation(false)}
+            onNavigationComplete={() => {
+              console.log('Navigation complete callback called, resetting isAppTitleNavigation to false');
+              setIsAppTitleNavigation(false);
+            }}
           />
         </div>
       </div>

@@ -24,6 +24,7 @@ interface BibleReaderProps {
 }
 
 const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete }: BibleReaderProps) => {
+  console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentVerse, setCurrentVerse] = useState(1);
@@ -140,7 +141,7 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
     };
 
     fetchChapterData();
-  }, [book, chapter, versionCode]);
+  }, [book, chapter, versionCode, isAppTitleNavigation]);
 
   // Set current verse when targetVerse changes
   useEffect(() => {
