@@ -98,8 +98,17 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       setLoading(false);
       
       // Only save reading position if it's not the initial load, app title navigation, or if user is intentionally navigating
+      console.log('BibleReader savePosition check:', { 
+        isInitialLoad, 
+        isNavigating, 
+        isAppTitleNavigation, 
+        shouldSave: data && (!isInitialLoad || isNavigating) && !isAppTitleNavigation 
+      });
       if (data && (!isInitialLoad || isNavigating) && !isAppTitleNavigation) {
+        console.log('Saving reading position because conditions met');
         await saveReadingPosition(book, chapter, versionCode);
+      } else {
+        console.log('NOT saving reading position - conditions not met');
       }
       
       // Mark that initial load is complete
