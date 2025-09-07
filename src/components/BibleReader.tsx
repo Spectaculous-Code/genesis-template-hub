@@ -252,6 +252,10 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       
       if (navigationData) {
         setIsNavigating(true);
+        
+        // Save current position before navigating
+        await saveReadingPosition(book, chapter, versionCode);
+        
         onBookSelect(navigationData.book);
         onChapterSelect(navigationData.chapter);
         toast({

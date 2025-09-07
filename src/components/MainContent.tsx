@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect } from "react";
 import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BibleVersion {
   id: string;
@@ -59,18 +60,78 @@ const MainContent = ({
   const { latestPosition, loading: positionLoading } = useLatestReadingPosition();
 
   // Wrapper functions to reset isFromLatestPosition when user manually navigates
-  const handleBookSelect = (bookName: string) => {
+  const handleBookSelect = async (bookName: string) => {
     if (bookName !== selectedBook) {
+      // Save current position before changing book
+      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'fin2017';
+      if (selectedBook && selectedChapter) {
+        try {
+          await saveReadingPositionToDB(selectedBook, selectedChapter, currentVersionCode);
+        } catch (error) {
+          console.error('Error saving reading position:', error);
+        }
+      }
       setIsFromLatestPosition(false);
     }
     onBookSelect(bookName);
   };
 
-  const handleChapterSelect = (chapterNumber: number) => {
+  const handleChapterSelect = async (chapterNumber: number) => {
     if (chapterNumber !== selectedChapter) {
+      // Save current position before changing chapter
+      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'fin2017';
+      if (selectedBook && selectedChapter) {
+        try {
+          await saveReadingPositionToDB(selectedBook, selectedChapter, currentVersionCode);
+        } catch (error) {
+          console.error('Error saving reading position:', error);
+        }
+      }
       setIsFromLatestPosition(false);
     }
     onChapterSelect(chapterNumber);
+  };
+
+  // Function to save reading position to database
+  const saveReadingPositionToDB = async (bookName: string, chapterNum: number, versionCode: string) => {
+    const { user } = useAuth();
+    if (!user) return;
+
+    try {
+      // First get the version ID
+      const { data: versionData } = await supabase
+        .from('bible_versions')
+        .select('id')
+        .eq('code', versionCode)
+        .single();
+
+      if (versionData) {
+        // Then get the book data
+        const { data: bookData } = await supabase
+          .from('books')
+          .select('id')
+          .eq('name', bookName)
+          .eq('version_id', versionData.id)
+          .single();
+
+        if (bookData) {
+          // Save to user_reading_history
+          await supabase
+            .from('user_reading_history')
+            .upsert({
+              user_id: user.id,
+              book_id: bookData.id,
+              version_id: versionData.id,
+              chapter_number: chapterNum,
+              verse_number: 1, // Default to verse 1
+              last_read_at: new Date().toISOString(),
+              history_type: 'read'
+            });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving reading history to database:', error);
+    }
   };
 
   useEffect(() => {
