@@ -90,8 +90,9 @@ const MainContent = ({
           const books = await getBibleBooks(version.code);
           setBibleBooks(books);
 
-          // Initialize with proper book name if books are loaded and current selection doesn't exist
-          if (books.length > 0 && !books.find(b => b.name === selectedBook)) {
+          // Only initialize book selection if we don't have a selected book or it's not in the new books
+          // AND we're not in the middle of app title navigation
+          if (books.length > 0 && !selectedBook && !isAppTitleNavigation) {
             // Try to find Matthew/Matteus first, otherwise use first book
             const matthewBook = books.find(b => 
               b.name.toLowerCase().includes('matt') || 
@@ -108,7 +109,7 @@ const MainContent = ({
       }
     };
     fetchBooksForVersion();
-  }, [selectedVersion, bibleVersions, selectedBook, onBookSelect]);
+  }, [selectedVersion, bibleVersions]);
 
   useEffect(() => {
     if (currentView === 'search' && searchQuery) {

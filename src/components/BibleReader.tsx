@@ -93,6 +93,9 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
 
   useEffect(() => {
     const fetchChapterData = async () => {
+      // Skip if we don't have a book yet
+      if (!book) return;
+      
       console.log('=== FETCH CHAPTER DATA START ===');
       console.log('isInitialLoad:', isInitialLoad, 'isNavigating:', isNavigating, 'isAppTitleNavigation:', isAppTitleNavigation);
       
