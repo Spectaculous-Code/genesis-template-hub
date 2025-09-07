@@ -12,6 +12,7 @@ import { getFinnishBookName, getEnglishBookName } from "@/lib/bookNameMapping";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect } from "react";
+import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
 
 interface BibleVersion {
   id: string;
@@ -54,6 +55,7 @@ const MainContent = ({
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
+  const { latestPosition, loading: positionLoading } = useLatestReadingPosition();
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -90,10 +92,26 @@ const MainContent = ({
           const books = await getBibleBooks(version.code);
           setBibleBooks(books);
 
-          // Only initialize book selection if we don't have a selected book or it's not in the new books
-          // AND we're not in the middle of app title navigation
-          if (books.length > 0 && !selectedBook && !isAppTitleNavigation) {
-            // Try to find Matthew/Matteus first, otherwise use first book
+          // Only initialize book selection if we don't have a selected book
+          // AND we're not in app title navigation
+          if (books.length > 0 && !selectedBook && !isAppTitleNavigation && !positionLoading) {
+            // Try to use latest reading position first
+            if (latestPosition?.bookName) {
+              // Find book by Finnish or English name
+              const lastReadBook = books.find(b => 
+                b.name === getEnglishBookName(latestPosition.bookName) ||
+                getFinnishBookName(b.name) === latestPosition.bookName
+              );
+              if (lastReadBook) {
+                onBookSelect(lastReadBook.name);
+                if (latestPosition.chapter) {
+                  onChapterSelect(latestPosition.chapter);
+                }
+                return;
+              }
+            }
+            
+            // Fallback to Matthew/Matteus if no latest position
             const matthewBook = books.find(b => 
               b.name.toLowerCase().includes('matt') || 
               b.name.toLowerCase().includes('matias') ||
@@ -109,7 +127,7 @@ const MainContent = ({
       }
     };
     fetchBooksForVersion();
-  }, [selectedVersion, bibleVersions]);
+  }, [selectedVersion, bibleVersions, latestPosition, positionLoading]);
 
   useEffect(() => {
     if (currentView === 'search' && searchQuery) {
