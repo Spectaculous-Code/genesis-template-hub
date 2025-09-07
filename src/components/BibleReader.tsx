@@ -93,6 +93,9 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
 
   useEffect(() => {
     const fetchChapterData = async () => {
+      console.log('=== FETCH CHAPTER DATA START ===');
+      console.log('isInitialLoad:', isInitialLoad, 'isNavigating:', isNavigating, 'isAppTitleNavigation:', isAppTitleNavigation);
+      
       setLoading(true);
       const data = await getChapterData(book, chapter, versionCode);
       setChapterData(data);
@@ -110,6 +113,12 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
         await saveReadingPosition(book, chapter, versionCode);
       } else {
         console.log('NOT saving reading position - conditions not met');
+        if (isAppTitleNavigation) {
+          console.log('  -> Skipped because isAppTitleNavigation is TRUE');
+        }
+        if (isInitialLoad && !isNavigating) {
+          console.log('  -> Skipped because isInitialLoad and not navigating');
+        }
       }
       
       // Mark that initial load is complete
@@ -117,13 +126,16 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
         setIsInitialLoad(false);
       }
       
-      // Call navigation complete callback if provided
+      // Call navigation complete callback if provided (but delay it slightly to ensure state is stable)
       if (isAppTitleNavigation && onNavigationComplete) {
-        onNavigationComplete();
+        console.log('=== APP TITLE NAVIGATION COMPLETE - calling callback ===');
+        setTimeout(() => {
+          onNavigationComplete();
+        }, 100);
       }
       
       // Only show next chapter info if explicitly enabled and not navigating programmatically
-      if (data && showNextChapterInfo && !isNavigating) {
+      if (data && showNextChapterInfo && !isNavigating && !isAppTitleNavigation) {
         const totalChapters = await getBookChapters(book, versionCode);
         const nextChapterInfo = generateNextChapterInfo(
           book, 
@@ -138,6 +150,7 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       
       // Reset navigation flag
       setIsNavigating(false);
+      console.log('=== FETCH CHAPTER DATA END ===');
     };
 
     fetchChapterData();

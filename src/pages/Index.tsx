@@ -95,11 +95,15 @@ const Index = () => {
 
   const handleAppTitleClick = () => {
     console.log('App title clicked, latestPosition:', latestPosition);
+    
+    // Set the navigation flag first and keep it true
+    setIsAppTitleNavigation(true);
+    
     if (latestPosition) {
       // Navigate to latest reading position without saving
       console.log('Navigating to latest position:', latestPosition);
-      console.log('Setting isAppTitleNavigation to TRUE');
-      setIsAppTitleNavigation(true);
+      console.log('Setting navigation with isAppTitleNavigation TRUE');
+      
       setSelectedBook(latestPosition.bookName);
       setSelectedChapter(latestPosition.chapter);
       setTargetVerse(latestPosition.verse);
@@ -107,8 +111,7 @@ const Index = () => {
     } else {
       // Fallback to Genesis 1 if no reading history
       console.log('No latest position, falling back to Genesis 1');
-      console.log('Setting isAppTitleNavigation to TRUE');
-      setIsAppTitleNavigation(true);
+      console.log('Setting navigation with isAppTitleNavigation TRUE');
       setSelectedBook('Genesis');
       setSelectedChapter(1);
       setTargetVerse(undefined);
