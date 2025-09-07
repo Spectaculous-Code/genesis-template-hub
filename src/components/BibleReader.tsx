@@ -21,9 +21,10 @@ interface BibleReaderProps {
   showNextChapterInfo?: boolean;
   isAppTitleNavigation?: boolean;
   onNavigationComplete?: () => void;
+  isFromLatestPosition?: boolean;
 }
 
-const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete }: BibleReaderProps) => {
+const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }: BibleReaderProps) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -104,14 +105,18 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       setChapterData(data);
       setLoading(false);
       
-      // Only save reading position if it's not the initial load, app title navigation, or if user is intentionally navigating
+      // Save reading position if:
+      // 1. Not initial load OR user is navigating OR it's from latest position
+      // 2. AND not from app title navigation
+      const shouldSave = data && ((!isInitialLoad || isNavigating || isFromLatestPosition) && !isAppTitleNavigation);
       console.log('BibleReader savePosition check:', { 
         isInitialLoad, 
         isNavigating, 
         isAppTitleNavigation, 
-        shouldSave: data && (!isInitialLoad || isNavigating) && !isAppTitleNavigation 
+        isFromLatestPosition,
+        shouldSave 
       });
-      if (data && (!isInitialLoad || isNavigating) && !isAppTitleNavigation) {
+      if (shouldSave) {
         console.log('Saving reading position because conditions met');
         await saveReadingPosition(book, chapter, versionCode);
       } else {
@@ -119,8 +124,8 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
         if (isAppTitleNavigation) {
           console.log('  -> Skipped because isAppTitleNavigation is TRUE');
         }
-        if (isInitialLoad && !isNavigating) {
-          console.log('  -> Skipped because isInitialLoad and not navigating');
+        if (isInitialLoad && !isNavigating && !isFromLatestPosition) {
+          console.log('  -> Skipped because isInitialLoad and not from latest position');
         }
       }
       

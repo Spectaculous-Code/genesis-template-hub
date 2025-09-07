@@ -54,8 +54,24 @@ const MainContent = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isFromLatestPosition, setIsFromLatestPosition] = useState(false);
   const { toast } = useToast();
   const { latestPosition, loading: positionLoading } = useLatestReadingPosition();
+
+  // Wrapper functions to reset isFromLatestPosition when user manually navigates
+  const handleBookSelect = (bookName: string) => {
+    if (bookName !== selectedBook) {
+      setIsFromLatestPosition(false);
+    }
+    onBookSelect(bookName);
+  };
+
+  const handleChapterSelect = (chapterNumber: number) => {
+    if (chapterNumber !== selectedChapter) {
+      setIsFromLatestPosition(false);
+    }
+    onChapterSelect(chapterNumber);
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -103,6 +119,7 @@ const MainContent = ({
                 getFinnishBookName(b.name) === latestPosition.bookName
               );
               if (lastReadBook) {
+                setIsFromLatestPosition(true);
                 onBookSelect(lastReadBook.name);
                 if (latestPosition.chapter) {
                   onChapterSelect(latestPosition.chapter);
@@ -204,12 +221,13 @@ const MainContent = ({
             chapter={selectedChapter}
             targetVerse={targetVerse}
             versionCode={currentVersionCode}
-            onBookSelect={onBookSelect}
-            onChapterSelect={onChapterSelect}
+            onBookSelect={handleBookSelect}
+            onChapterSelect={handleChapterSelect}
             onVerseSelect={onVerseSelect}
             showNextChapterInfo={false}
             isAppTitleNavigation={isAppTitleNavigation}
             onNavigationComplete={onNavigationComplete}
+            isFromLatestPosition={isFromLatestPosition}
           />
         );
     }
@@ -244,7 +262,7 @@ const MainContent = ({
               </Select>
 
               {/* Chapter Selection */}
-              <Select value={selectedChapter.toString()} onValueChange={(value) => onChapterSelect(parseInt(value))}>
+              <Select value={selectedChapter.toString()} onValueChange={(value) => handleChapterSelect(parseInt(value))}>
                 <SelectTrigger className="w-[80px]">
                   <SelectValue />
                 </SelectTrigger>
