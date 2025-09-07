@@ -56,6 +56,7 @@ const MainContent = ({
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isFromLatestPosition, setIsFromLatestPosition] = useState(false);
+  const [hasManuallyNavigated, setHasManuallyNavigated] = useState(false);
   const { toast } = useToast();
   const { latestPosition, loading: positionLoading } = useLatestReadingPosition();
 
@@ -72,6 +73,7 @@ const MainContent = ({
         }
       }
       setIsFromLatestPosition(false);
+      setHasManuallyNavigated(true);
     }
     onBookSelect(bookName);
   };
@@ -88,11 +90,18 @@ const MainContent = ({
         }
       }
       setIsFromLatestPosition(false);
+      setHasManuallyNavigated(true);
     }
     onChapterSelect(chapterNumber);
   };
 
-  // Function to save reading position to database
+  // Update BibleReader when manual navigation happens
+  useEffect(() => {
+    if (hasManuallyNavigated) {
+      // Trigger BibleReader to mark user navigation
+      setHasManuallyNavigated(false);
+    }
+  }, [hasManuallyNavigated]);
   const saveReadingPositionToDB = async (bookName: string, chapterNum: number, versionCode: string) => {
     const { user } = useAuth();
     if (!user) return;

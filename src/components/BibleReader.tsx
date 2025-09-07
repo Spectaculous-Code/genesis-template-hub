@@ -37,10 +37,17 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
   const [infoMessage, setInfoMessage] = useState("");
   const [isNavigating, setIsNavigating] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasUserNavigated, setHasUserNavigated] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
-  // Function to save reading position to localStorage and database
+  // Track when props change (indicating navigation)
+  useEffect(() => {
+    // If book/chapter changed and it's not the first render, user navigated
+    if (!isInitialLoad && (book || chapter)) {
+      setHasUserNavigated(true);
+    }
+  }, [book, chapter]);
   const saveReadingPosition = async (bookName: string, chapterNum: number, version: string) => {
     const currentPosition = {
       book: bookName,
@@ -251,10 +258,11 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       }
       
       if (navigationData) {
-        setIsNavigating(true);
-        
         // Save current position before navigating
         await saveReadingPosition(book, chapter, versionCode);
+        
+        setIsNavigating(true);
+        setHasUserNavigated(true);
         
         onBookSelect(navigationData.book);
         onChapterSelect(navigationData.chapter);
