@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, BookOpen, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { getFinnishBookName } from '@/lib/bookNameMapping';
 
 interface ReadingHistoryItem {
   id: string;
@@ -121,7 +122,7 @@ const UserReadingHistory = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="font-medium">
-                    {item.book.name_localized || item.book.name} {item.chapter_number}:{item.verse_number}
+                    {getFinnishBookName(item.book.name)} {item.chapter_number}:{item.verse_number}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {item.version.name} ({item.version.code})
