@@ -135,8 +135,11 @@ const UserReadingHistory = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    console.log('Navigating to:', item.book.name, item.chapter_number, item.verse_number);
                     // Navigate to the verse by opening the main page with proper parameters
-                    window.location.href = `/?book=${encodeURIComponent(item.book.name)}&chapter=${item.chapter_number}&verse=${item.verse_number}`;
+                    // Use the exact book name from database for consistency
+                    const bookName = item.book.name;
+                    window.location.href = `/?book=${encodeURIComponent(bookName)}&chapter=${item.chapter_number}&verse=${item.verse_number}`;
                   }}
                 >
                   Avaa jae
