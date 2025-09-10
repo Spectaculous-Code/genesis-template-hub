@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { User, Settings, FileText, Highlighter, BookOpen, Headphones, Calendar, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -118,7 +118,6 @@ const ProfilePage = () => {
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
-              <SidebarTrigger />
               <div className="relative flex-1 max-w-lg">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input

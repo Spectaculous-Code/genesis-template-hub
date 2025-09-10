@@ -18,6 +18,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -147,6 +148,11 @@ export function AppSidebar({
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
+      {/* Sidebar trigger at the top */}
+      <div className="p-2 border-b border-border">
+        <SidebarTrigger />
+      </div>
+      
       <SidebarContent>
         {/* Raamattu Section */}
         <SidebarGroup>
