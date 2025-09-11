@@ -148,18 +148,19 @@ export function AppSidebar({
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
-      {/* Sidebar trigger at the top */}
-      <div className="p-2 border-b border-border">
+      {/* Sidebar trigger and title at the top */}
+      <div className="p-2 border-b border-border flex items-center gap-3">
         <SidebarTrigger />
+        {!collapsed && (
+          <span className="text-primary font-bold text-sm tracking-wide">
+            RAAMATTU NYT
+          </span>
+        )}
       </div>
       
       <SidebarContent>
         {/* Raamattu Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary font-bold text-sm tracking-wide flex items-center px-3 py-2">
-            <Book className="mr-2 h-4 w-4" />
-            {!collapsed && "RAAMATTU NYT"}
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
 
