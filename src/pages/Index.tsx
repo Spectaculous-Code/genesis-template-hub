@@ -1,6 +1,6 @@
 // Main application entry point
 import { useState, useEffect } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import MainContent from "@/components/MainContent";
 import { Input } from "@/components/ui/input";
@@ -153,7 +153,6 @@ const Index = () => {
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
-              <SidebarTrigger />
               <div className="relative flex-1 max-w-lg">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
