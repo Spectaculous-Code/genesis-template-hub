@@ -151,7 +151,7 @@ export function AppSidebar({
       {/* Desktop overlay when sidebar is open */}
       {open && !isMobile && (
         <div
-        className="fixed inset-0 bg-black/25 z-0 animate-fade-in"
+        className="fixed inset-0 bg-black/40 z-40 animate-fade-in"
         onClick={toggleSidebar}
         />
       )}

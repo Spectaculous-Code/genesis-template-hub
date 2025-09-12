@@ -149,7 +149,7 @@ const Index = () => {
           selectedVerse={selectedVerse}
         />
 
-        <div className="flex flex-col min-h-screen w-full">
+        <div className="absolute inset-0 flex flex-col" >
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
