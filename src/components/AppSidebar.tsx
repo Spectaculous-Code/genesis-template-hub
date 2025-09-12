@@ -47,7 +47,7 @@ export function AppSidebar({
   onNavigateToHighlights,
   selectedVerse
 }: AppSidebarProps) {
-  const { state } = useSidebar();
+  const { state, open, isMobile, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const { user } = useAuth();
   const [lastAudioPosition, setLastAudioPosition] = useState<string>("Ei viimeisintä");
@@ -148,21 +148,18 @@ export function AppSidebar({
 
   return (
     <>
-      {/* Backdrop overlay when expanded */}
-      {!collapsed && (
-        <div 
-          className="fixed inset-0 bg-black/20 z-40 md:hidden"
-          onClick={() => {
-            // Close sidebar when clicking backdrop
-            const trigger = document.querySelector('[data-sidebar="trigger"]') as HTMLElement;
-            trigger?.click();
-          }}
+      {/* Desktop overlay when sidebar is open */}
+      {open && !isMobile && (
+        <div
+        className="fixed inset-0 bg-black/25 z-0 animate-fade-in"
+        onClick={toggleSidebar}
         />
       )}
-      
-      <Sidebar 
-        className={`fixed left-0 top-0 h-full z-50 ${collapsed ? "w-14" : "w-64"} transition-all duration-300`} 
+
+      <Sidebar
+        variant="floating"
         collapsible="icon"
+        className="[&>div:first-child]:hidden"
       >
       {/* Sidebar trigger and title at the top */}
       <div className="p-2 border-b border-border flex items-center gap-3">
