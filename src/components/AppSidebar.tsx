@@ -147,7 +147,23 @@ export function AppSidebar({
 
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
+    <>
+      {/* Backdrop overlay when expanded */}
+      {!collapsed && (
+        <div 
+          className="fixed inset-0 bg-black/20 z-40 md:hidden"
+          onClick={() => {
+            // Close sidebar when clicking backdrop
+            const trigger = document.querySelector('[data-sidebar="trigger"]') as HTMLElement;
+            trigger?.click();
+          }}
+        />
+      )}
+      
+      <Sidebar 
+        className={`fixed left-0 top-0 h-full z-50 ${collapsed ? "w-14" : "w-64"} transition-all duration-300`} 
+        collapsible="icon"
+      >
       {/* Sidebar trigger and title at the top */}
       <div className="p-2 border-b border-border flex items-center gap-3">
         <SidebarTrigger />
@@ -312,5 +328,6 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
+    </>
   );
 }
