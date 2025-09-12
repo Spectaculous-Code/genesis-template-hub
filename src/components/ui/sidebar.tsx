@@ -219,15 +219,21 @@ const Sidebar = React.forwardRef<
         data-variant={variant}
         data-side={side}
       >
-        {/* This is what handles the sidebar gap on desktop */}
+        {/* This spacer controls layout width on desktop */}
         <div
           className={cn(
-            "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
-            "group-data-[collapsible=offcanvas]:w-0",
+            "duration-200 relative h-svh bg-transparent transition-[width] ease-linear",
             "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
+            // Dynamic width: reserve mini width when collapsed, none when expanded in floating/inset
+            state === "collapsed"
+              ? (collapsible === "offcanvas"
+                  ? "w-0"
+                  : (variant === "floating" || variant === "inset"
+                      ? "w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
+                      : "w-[--sidebar-width-icon]"))
+              : (variant === "floating" || variant === "inset"
+                  ? "w-0"
+                  : "w-[--sidebar-width]")
           )}
         />
         <div

@@ -140,7 +140,7 @@ const Index = () => {
 
   return (
     <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen w-full bg-background relative">
+      <div className="min-h-screen flex w-full bg-background">
         <AppSidebar 
           onNavigateToContinueAudio={handleNavigateToContinueAudio}
           onNavigateToContinueText={handleNavigateToContinueText}
@@ -149,7 +149,7 @@ const Index = () => {
           selectedVerse={selectedVerse}
         />
 
-        <div className="absolute inset-0 flex flex-col" >
+        <div className="flex-1 flex flex-col">
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">

@@ -19,6 +19,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -159,7 +160,6 @@ export function AppSidebar({
       <Sidebar
         variant="floating"
         collapsible="icon"
-        className="[&>div:first-child]:hidden"
       >
       {/* Sidebar trigger and title at the top */}
       <div className="p-2 border-b border-border flex items-center gap-3">
