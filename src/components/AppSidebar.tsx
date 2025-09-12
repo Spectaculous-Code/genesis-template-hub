@@ -148,19 +148,10 @@ export function AppSidebar({
 
 
   return (
-    <>
-      {/* Desktop overlay when sidebar is open */}
-      {open && !isMobile && (
-        <div
-        className="fixed inset-0 bg-black/40 z-40 animate-fade-in"
-        onClick={toggleSidebar}
-        />
-      )}
-
-      <Sidebar
-        variant="floating"
-        collapsible="icon"
-      >
+    <Sidebar
+      variant="floating"
+      collapsible="icon"
+    >
       {/* Sidebar trigger and title at the top */}
       <div className="p-2 border-b border-border flex items-center gap-3">
         <SidebarTrigger />
@@ -325,6 +316,5 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-    </>
   );
 }
