@@ -110,6 +110,32 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       setLoading(true);
       const data = await getChapterData(book, chapter, versionCode);
       setChapterData(data);
+      
+      // Load existing highlights for this chapter if user is logged in
+      if (data && user) {
+        try {
+          const verseIds = data.verses.map(v => v.id);
+          const { data: existingHighlights } = await supabase
+            .from('highlights')
+            .select('verse_id')
+            .eq('user_id', user.id)
+            .in('verse_id', verseIds);
+
+          if (existingHighlights) {
+            const highlightedVerseNumbers = new Set<number>();
+            existingHighlights.forEach(highlight => {
+              const verse = data.verses.find(v => v.id === highlight.verse_id);
+              if (verse) {
+                highlightedVerseNumbers.add(verse.verse_number);
+              }
+            });
+            setHighlights(highlightedVerseNumbers);
+          }
+        } catch (error) {
+          console.error('Error loading highlights:', error);
+        }
+      }
+      
       setLoading(false);
       
       // Save reading position if:
@@ -209,22 +235,89 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
     }
   };
 
-  const toggleHighlight = (verseNumber: number) => {
-    const newHighlights = new Set(highlights);
-    if (newHighlights.has(verseNumber)) {
-      newHighlights.delete(verseNumber);
+  const toggleHighlight = async (verseNumber: number) => {
+    if (!user) {
       toast({
-        title: "Korostus poistettu",
-        description: `${getFinnishBookName(book)} ${chapter}:${verseNumber}`,
+        title: "Kirjaudu sisään",
+        description: "Korostaaksesi jakeita sinun täytyy olla kirjautuneena",
+        variant: "destructive"
       });
-    } else {
-      newHighlights.add(verseNumber);
+      return;
+    }
+
+    const newHighlights = new Set(highlights);
+    
+    // Find the verse ID from chapter data
+    const verse = chapterData?.verses.find(v => v.verse_number === verseNumber);
+    if (!verse) {
+      console.error('Verse not found:', verseNumber);
+      return;
+    }
+
+    try {
+      if (newHighlights.has(verseNumber)) {
+        // Remove highlight
+        newHighlights.delete(verseNumber);
+        
+        // Delete from database
+        const { error } = await supabase
+          .from('highlights')
+          .delete()
+          .eq('verse_id', verse.id)
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Error removing highlight:', error);
+          toast({
+            title: "Virhe",
+            description: "Korostuksen poistaminen epäonnistui",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        toast({
+          title: "Korostus poistettu",
+          description: `${getFinnishBookName(book)} ${chapter}:${verseNumber}`,
+        });
+      } else {
+        // Add highlight
+        newHighlights.add(verseNumber);
+        
+        // Save to database
+        const { error } = await supabase
+          .from('highlights')
+          .insert({
+            verse_id: verse.id,
+            user_id: user.id,
+            color: '#FFFF00' // Default yellow highlight
+          });
+
+        if (error) {
+          console.error('Error saving highlight:', error);
+          toast({
+            title: "Virhe", 
+            description: "Korostuksen tallentaminen epäonnistui",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        toast({
+          title: "Jae korostettu",
+          description: `${getFinnishBookName(book)} ${chapter}:${verseNumber}`,
+        });
+      }
+      
+      setHighlights(newHighlights);
+    } catch (error) {
+      console.error('Error toggling highlight:', error);
       toast({
-        title: "Jae korostettu",
-        description: `${getFinnishBookName(book)} ${chapter}:${verseNumber}`,
+        title: "Virhe",
+        description: "Korostuksen käsitteleminen epäonnistui",
+        variant: "destructive"
       });
     }
-    setHighlights(newHighlights);
   };
 
   const toggleBookmark = () => {
