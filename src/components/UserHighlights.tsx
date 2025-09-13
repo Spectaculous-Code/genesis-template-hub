@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +28,7 @@ interface UserHighlight {
 
 const UserHighlights = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [highlights, setHighlights] = useState<UserHighlight[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -106,6 +108,15 @@ const UserHighlights = () => {
     }
   };
 
+  const handleOpenVerse = (highlight: UserHighlight) => {
+    const bookName = highlight.verses.chapters.books.name;
+    const chapterNumber = highlight.verses.chapters.chapter_number;
+    const verseNumber = highlight.verses.verse_number;
+    
+    // Navigate to the main page with query parameters
+    navigate(`/?book=${encodeURIComponent(bookName)}&chapter=${chapterNumber}&verse=${verseNumber}`);
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -182,7 +193,11 @@ const UserHighlights = () => {
                     className={`w-4 h-4 rounded-full ${getHighlightColor(highlight.color)} border`}
                     title="Korostuksen väri"
                   />
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleOpenVerse(highlight)}
+                  >
                     <ExternalLink className="h-4 w-4 mr-1" />
                     Avaa jae
                   </Button>
