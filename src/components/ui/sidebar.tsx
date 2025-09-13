@@ -224,7 +224,7 @@ const Sidebar = React.forwardRef<
           className={cn(
             "duration-200 relative h-svh bg-transparent transition-[width] ease-linear",
             "group-data-[side=right]:rotate-180",
-            // Dynamic width: reserve mini width when collapsed, none when expanded in floating/inset
+            // Dynamic width: reserve mini width when collapsed, and keep it even when expanded in floating/inset
             state === "collapsed"
               ? (collapsible === "offcanvas"
                   ? "w-0"
@@ -232,13 +232,13 @@ const Sidebar = React.forwardRef<
                       ? "w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
                       : "w-[--sidebar-width-icon]"))
               : (variant === "floating" || variant === "inset"
-                  ? "w-0"
+                  ? "w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
                   : "w-[--sidebar-width]")
           )}
         />
         <div
           className={cn(
-            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
+            "duration-200 fixed inset-y-0 z-[60] hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
