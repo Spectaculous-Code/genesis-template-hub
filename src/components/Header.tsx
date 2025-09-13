@@ -116,7 +116,7 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Valitse kirja" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[5]">
               {loading ? (
                 <div className="px-2 py-1 text-sm text-muted-foreground">Ladataan...</div>
               ) : (
@@ -146,7 +146,7 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
             <SelectTrigger className="w-[80px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[5]">
               {chapters.map((chapter) => (
                 <SelectItem key={chapter} value={chapter.toString()}>
                   {chapter}
@@ -159,7 +159,7 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Versio" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[5]">
               {bibleVersions.map((version) => (
                 <SelectItem key={version.id} value={version.id}>
                   {version.code}
@@ -202,7 +202,7 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
               <ChevronDown className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="z-[5]">
             <DropdownMenuItem>JATKA</DropdownMenuItem>
             <DropdownMenuItem>MERKINNÄT</DropdownMenuItem>
             <DropdownMenuItem>HISTORIA</DropdownMenuItem>
