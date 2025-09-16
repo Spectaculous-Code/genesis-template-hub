@@ -58,7 +58,8 @@ const MainContent = ({
   const [isFromLatestPosition, setIsFromLatestPosition] = useState(false);
   const [hasManuallyNavigated, setHasManuallyNavigated] = useState(false);
   const { toast } = useToast();
-  const { latestPosition, loading: positionLoading } = useLatestReadingPosition();
+  const { user } = useAuth();
+  const { latestPosition, loading: positionLoading, refetch: refetchLatestPosition } = useLatestReadingPosition();
 
   // Wrapper functions to reset isFromLatestPosition when user manually navigates
   const handleBookSelect = async (bookName: string) => {
@@ -103,7 +104,6 @@ const MainContent = ({
     }
   }, [hasManuallyNavigated]);
   const saveReadingPositionToDB = async (bookName: string, chapterNum: number, versionCode: string) => {
-    const { user } = useAuth();
     if (!user) return;
 
     try {
@@ -140,6 +140,38 @@ const MainContent = ({
       }
     } catch (error) {
       console.error('Error saving reading history to database:', error);
+    }
+  };
+
+  // Save current chapter as last read position with toast notification
+  const saveAsLastRead = async () => {
+    if (!user || !selectedBook) {
+      toast({
+        title: "Kirjautuminen vaaditaan",
+        description: "Kirjaudu sisään tallentaaksesi lukuasennon",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'fin2017';
+      await saveReadingPositionToDB(selectedBook, selectedChapter, currentVersionCode);
+      
+      toast({
+        title: "Lukuasento tallennettu",
+        description: `${getFinnishBookName(selectedBook)} ${selectedChapter} - Jatka lukemista tästä`,
+      });
+
+      // Refresh latest position
+      refetchLatestPosition();
+    } catch (error) {
+      console.error('Error saving reading position:', error);
+      toast({
+        title: "Virhe",
+        description: "Lukuasennon tallennus epäonnistui",
+        variant: "destructive"
+      });
     }
   };
 
@@ -376,7 +408,7 @@ const MainContent = ({
               <Button variant="outline" size="sm">
                 <Volume2 className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={saveAsLastRead}>
                 <Bookmark className="h-4 w-4" />
               </Button>
             </div>
