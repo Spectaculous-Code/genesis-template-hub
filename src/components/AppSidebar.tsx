@@ -198,7 +198,7 @@ export function AppSidebar({
                     className={lastReadingData ? "cursor-pointer" : ""}
                   >
                     <FileText className="h-4 w-4" />
-                    {!collapsed && <span>Jatka lukemista</span>}
+                    {!collapsed && <span>Kirjanmerkki</span>}
                   </SidebarMenuButton>
                   {!collapsed && (
                     <div className={`ml-8 text-xs ${lastReadingData ? 'text-primary cursor-pointer' : 'text-muted-foreground'}`}>

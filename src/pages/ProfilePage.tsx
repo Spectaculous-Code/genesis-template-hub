@@ -145,10 +145,14 @@ const ProfilePage = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="reading-history" className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Lukuhistoria
+                </TabsTrigger>
+                <TabsTrigger value="bookmarks" className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Kirjanmerkit
                 </TabsTrigger>
                 <TabsTrigger value="listening-history" className="flex items-center gap-2" disabled>
                   <Headphones className="h-4 w-4" />
@@ -174,6 +178,18 @@ const ProfilePage = () => {
 
               <TabsContent value="reading-history">
                 <UserReadingHistory />
+              </TabsContent>
+
+              <TabsContent value="bookmarks">
+                <Card>
+                  <CardHeader className="text-center">
+                    <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <CardTitle>Kirjanmerkit</CardTitle>
+                    <CardDescription>
+                      Tämä ominaisuus on tulossa pian
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
               </TabsContent>
 
               <TabsContent value="listening-history">

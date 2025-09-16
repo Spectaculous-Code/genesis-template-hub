@@ -160,7 +160,7 @@ const MainContent = ({
       
       toast({
         title: "Lukuasento tallennettu",
-        description: `${getFinnishBookName(selectedBook)} ${selectedChapter} - Jatka lukemista tästä`,
+        description: `${getFinnishBookName(selectedBook)} ${selectedChapter} - Kirjanmerkki`,
       });
 
       // Refresh latest position
