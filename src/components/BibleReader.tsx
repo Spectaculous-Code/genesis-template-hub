@@ -48,56 +48,8 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       setHasUserNavigated(true);
     }
   }, [book, chapter]);
-  const saveReadingPosition = async (bookName: string, chapterNum: number, version: string) => {
-    const currentPosition = {
-      book: bookName,
-      chapter: chapterNum,
-      bookName: getFinnishBookName(bookName),
-      versionCode: version,
-      timestamp: Date.now()
-    };
-    localStorage.setItem('lastReadingPosition', JSON.stringify(currentPosition));
-    console.log('Saved reading position:', currentPosition);
-
-    // Also save to database if user is authenticated
-    if (user) {
-      try {
-        // First get the version ID
-        const { data: versionData } = await supabase
-          .from('bible_versions')
-          .select('id')
-          .eq('code', version)
-          .single();
-
-        if (versionData) {
-          // Then get the book data
-          const { data: bookData } = await supabase
-            .from('books')
-            .select('id')
-            .eq('name', bookName)
-            .eq('version_id', versionData.id)
-            .single();
-
-          if (bookData) {
-            // Save to user_reading_history
-            await supabase
-              .from('user_reading_history')
-              .upsert({
-                user_id: user.id,
-                book_id: bookData.id,
-                version_id: versionData.id,
-                chapter_number: chapterNum,
-                verse_number: 1, // Default to verse 1
-                last_read_at: new Date().toISOString(),
-                history_type: 'read'
-              });
-          }
-        }
-      } catch (error) {
-        console.error('Error saving reading history to database:', error);
-      }
-    }
-  };
+  // Remove the saveReadingPosition function as it's no longer needed for auto-save
+  // Only explicit bookmark saves are done in MainContent.tsx
 
   useEffect(() => {
     const fetchChapterData = async () => {
@@ -138,29 +90,8 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       
       setLoading(false);
       
-      // Save reading position if:
-      // 1. Not initial load OR user is navigating OR it's from latest position
-      // 2. AND not from app title navigation
-      const shouldSave = data && ((!isInitialLoad || isNavigating || isFromLatestPosition) && !isAppTitleNavigation);
-      console.log('BibleReader savePosition check:', { 
-        isInitialLoad, 
-        isNavigating, 
-        isAppTitleNavigation, 
-        isFromLatestPosition,
-        shouldSave 
-      });
-      if (shouldSave) {
-        console.log('Saving reading position because conditions met');
-        await saveReadingPosition(book, chapter, versionCode);
-      } else {
-        console.log('NOT saving reading position - conditions not met');
-        if (isAppTitleNavigation) {
-          console.log('  -> Skipped because isAppTitleNavigation is TRUE');
-        }
-        if (isInitialLoad && !isNavigating && !isFromLatestPosition) {
-          console.log('  -> Skipped because isInitialLoad and not from latest position');
-        }
-      }
+      // Auto-save is now disabled - only manual bookmarks save positions
+      console.log('BibleReader - auto-save disabled'); 
       
       // Mark that initial load is complete
       if (isInitialLoad) {
@@ -351,8 +282,7 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBo
       }
       
       if (navigationData) {
-        // Save current position before navigating
-        await saveReadingPosition(book, chapter, versionCode);
+        // Don't auto-save position when navigating
         
         setIsNavigating(true);
         setHasUserNavigated(true);

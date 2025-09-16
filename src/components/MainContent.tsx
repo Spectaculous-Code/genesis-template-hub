@@ -64,15 +64,6 @@ const MainContent = ({
   // Wrapper functions to reset isFromLatestPosition when user manually navigates
   const handleBookSelect = async (bookName: string) => {
     if (bookName !== selectedBook) {
-      // Save current position before changing book
-      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'fin2017';
-      if (selectedBook && selectedChapter) {
-        try {
-          await saveReadingPositionToDB(selectedBook, selectedChapter, currentVersionCode);
-        } catch (error) {
-          console.error('Error saving reading position:', error);
-        }
-      }
       setIsFromLatestPosition(false);
       setHasManuallyNavigated(true);
     }
@@ -81,15 +72,6 @@ const MainContent = ({
 
   const handleChapterSelect = async (chapterNumber: number) => {
     if (chapterNumber !== selectedChapter) {
-      // Save current position before changing chapter
-      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'fin2017';
-      if (selectedBook && selectedChapter) {
-        try {
-          await saveReadingPositionToDB(selectedBook, selectedChapter, currentVersionCode);
-        } catch (error) {
-          console.error('Error saving reading position:', error);
-        }
-      }
       setIsFromLatestPosition(false);
       setHasManuallyNavigated(true);
     }
@@ -124,18 +106,31 @@ const MainContent = ({
           .single();
 
         if (bookData) {
-          // Save to user_reading_history
-          await supabase
-            .from('user_reading_history')
-            .upsert({
-              user_id: user.id,
-              book_id: bookData.id,
-              version_id: versionData.id,
-              chapter_number: chapterNum,
-              verse_number: 1, // Default to verse 1
-              last_read_at: new Date().toISOString(),
-              history_type: 'read'
-            });
+          // Get the chapter data  
+          const { data: chapterData } = await supabase
+            .from('chapters')
+            .select('id')
+            .eq('book_id', bookData.id)
+            .eq('chapter_number', chapterNum)
+            .single();
+
+          if (chapterData) {
+            // Save to user_reading_history
+            await supabase
+              .from('user_reading_history')
+              .upsert({
+                user_id: user.id,
+                book_id: bookData.id,
+                chapter_id: chapterData.id,
+                version_id: versionData.id,
+                chapter_number: chapterNum,
+                verse_number: 1, // Default to verse 1
+                last_read_at: new Date().toISOString(),
+                history_type: 'read'
+              }, {
+                onConflict: 'user_id,book_id,chapter_number,version_id'
+              });
+          }
         }
       }
     } catch (error) {
