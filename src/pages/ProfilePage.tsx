@@ -24,9 +24,9 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Get tab from URL params, default to "kirjanmerkit"
+  // Get tab from URL params, default to "profiili"
   const urlParams = new URLSearchParams(location.search);
-  const activeTab = urlParams.get('tab') || 'kirjanmerkit';
+  const activeTab = urlParams.get('tab') || 'profiili';
 
   const handleTabChange = (value: string) => {
     navigate(`/profile?tab=${value}`);
@@ -145,7 +145,11 @@ const ProfilePage = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="profiili" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Profiili
+                </TabsTrigger>
                 <TabsTrigger value="kirjanmerkit" className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Kirjanmerkit
@@ -159,6 +163,46 @@ const ProfilePage = () => {
                   Koosteet
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="profiili">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Profiilitiedot</CardTitle>
+                    <CardDescription>
+                      Muokkaa profiilitietojasi
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Sähköposti</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={user?.email || ''}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="displayName">Näyttönimi</Label>
+                      <Input
+                        id="displayName"
+                        type="text"
+                        placeholder="Anna näyttönimesi"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSaveProfile}
+                      disabled={saving}
+                      className="w-full"
+                    >
+                      {saving ? "Tallennetaan..." : "Tallenna muutokset"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
               <TabsContent value="kirjanmerkit">
                 <UserReadingHistory />
