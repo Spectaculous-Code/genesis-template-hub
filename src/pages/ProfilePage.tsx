@@ -7,11 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { User, BookOpen, Search } from 'lucide-react';
+import { User, BookOpen, Search, Highlighter, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import UserReadingHistory from '@/components/UserReadingHistory';
+import UserHighlights from '@/components/UserHighlights';
+import UserSummaries from '@/components/UserSummaries';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -143,15 +145,31 @@ const ProfilePage = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-1">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="kirjanmerkit" className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Kirjanmerkit
+                </TabsTrigger>
+                <TabsTrigger value="korostukset" className="flex items-center gap-2">
+                  <Highlighter className="h-4 w-4" />
+                  Korostukset
+                </TabsTrigger>
+                <TabsTrigger value="koosteet" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Koosteet
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="kirjanmerkit">
                 <UserReadingHistory />
+              </TabsContent>
+
+              <TabsContent value="korostukset">
+                <UserHighlights />
+              </TabsContent>
+
+              <TabsContent value="koosteet">
+                <UserSummaries />
               </TabsContent>
             </Tabs>
           </div>
