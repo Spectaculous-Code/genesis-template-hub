@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { User, BookOpen, Search, Highlighter, FileText } from 'lucide-react';
+import { User, BookOpen, Search, Highlighter, FileText, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -145,7 +145,7 @@ const ProfilePage = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="profiili" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Profiili
@@ -161,6 +161,10 @@ const ProfilePage = () => {
                 <TabsTrigger value="koosteet" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Koosteet
+                </TabsTrigger>
+                <TabsTrigger value="lukusuunnitelma" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Lukusuunnitelma
                 </TabsTrigger>
               </TabsList>
 
@@ -214,6 +218,28 @@ const ProfilePage = () => {
 
               <TabsContent value="koosteet">
                 <UserSummaries />
+              </TabsContent>
+
+              <TabsContent value="lukusuunnitelma">
+                <Card>
+                  <CardHeader className="text-center">
+                    <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <CardTitle>Lukusuunnitelma</CardTitle>
+                    <CardDescription>
+                      Tämä ominaisuus on tulossa pian
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-muted-foreground mb-4">
+                      Pian voit luoda henkilökohtaisia lukusuunnitelmia ja seurata edistymistäsi Raamatun lukemisessa.
+                    </p>
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground">
+                        💡 Tulossa: Päivittäiset lukutehtävät, edistymisen seuranta ja henkilökohtaiset tavoitteet
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
