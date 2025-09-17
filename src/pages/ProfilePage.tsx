@@ -11,7 +11,7 @@ import { User, BookOpen, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import UserBookmarks from '@/components/UserBookmarks';
+import UserReadingHistory from '@/components/UserReadingHistory';
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -151,7 +151,7 @@ const ProfilePage = () => {
               </TabsList>
 
               <TabsContent value="kirjanmerkit">
-                <UserBookmarks />
+                <UserReadingHistory />
               </TabsContent>
             </Tabs>
           </div>

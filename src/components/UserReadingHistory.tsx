@@ -112,7 +112,7 @@ const UserReadingHistory = () => {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <BookOpen className="h-5 w-5" />
-        <h2 className="text-xl font-semibold">Lukuhistoria</h2>
+        <h2 className="text-xl font-semibold">Kirjanmerkit</h2>
       </div>
       
       <div className="grid gap-4">
