@@ -587,6 +587,7 @@ export type Database = {
           reference_order: number
           reference_text: string
           updated_at: string
+          version_id: string | null
         }
         Insert: {
           created_at?: string
@@ -595,6 +596,7 @@ export type Database = {
           reference_order?: number
           reference_text: string
           updated_at?: string
+          version_id?: string | null
         }
         Update: {
           created_at?: string
@@ -603,6 +605,7 @@ export type Database = {
           reference_order?: number
           reference_text?: string
           updated_at?: string
+          version_id?: string | null
         }
         Relationships: [
           {
@@ -610,6 +613,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "summary_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_bible_references_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "bible_versions"
             referencedColumns: ["id"]
           },
         ]
