@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,6 +35,7 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -203,9 +205,15 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="z-[5]">
-            <DropdownMenuItem>JATKA</DropdownMenuItem>
-            <DropdownMenuItem>MERKINNÄT</DropdownMenuItem>
-            <DropdownMenuItem>HISTORIA</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/summaries')}>
+              KOOSTEET
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/profile')}>
+              MERKINNÄT
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/profile?tab=historia')}>
+              HISTORIA
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
