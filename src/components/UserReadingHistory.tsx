@@ -122,15 +122,8 @@ const UserReadingHistory = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="font-medium">
-                    {getFinnishBookName(item.book.name)} {item.chapter_number}:{item.verse_number}
+                    {getFinnishBookName(item.book.name)} {item.chapter_number} ({item.version.code}, {format(new Date(item.last_read_at), 'dd.MM.yyyy')})
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {item.version.name} ({item.version.code})
-                  </p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    {format(new Date(item.last_read_at), 'dd.MM.yyyy HH:mm')}
-                  </div>
                 </div>
                 <Button
                   variant="outline"
