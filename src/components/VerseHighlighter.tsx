@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Highlighter, MessageSquare, Share, BookOpen } from "lucide-react";
+import { Highlighter, MessageSquare, Share, BookOpen, Plus } from "lucide-react";
 
 interface Verse {
   number: number;
@@ -102,6 +102,18 @@ const VerseHighlighter = ({
             }}
           >
             <BookOpen className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Future: Add to summary functionality
+            }}
+            title="Lisää koosteeseen"
+          >
+            <Plus className="h-4 w-4" />
           </Button>
         </div>
       </div>
