@@ -555,6 +555,103 @@ export type Database = {
           },
         ]
       }
+      summaries: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      summary_bible_references: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          reference_order: number
+          reference_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          reference_order?: number
+          reference_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          reference_order?: number
+          reference_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_bible_references_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "summary_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      summary_groups: {
+        Row: {
+          created_at: string
+          group_order: number
+          id: string
+          subtitle: string
+          summary_id: string
+          text_content: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_order?: number
+          id?: string
+          subtitle: string
+          summary_id: string
+          text_content?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_order?: number
+          id?: string
+          subtitle?: string
+          summary_id?: string
+          text_content?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_groups_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "summaries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tmp_fix_osis: {
         Row: {
           new_osis: string
