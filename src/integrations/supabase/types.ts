@@ -662,21 +662,6 @@ export type Database = {
           },
         ]
       }
-      tmp_fix_osis: {
-        Row: {
-          new_osis: string
-          old_osis: string
-        }
-        Insert: {
-          new_osis: string
-          old_osis: string
-        }
-        Update: {
-          new_osis?: string
-          old_osis?: string
-        }
-        Relationships: []
-      }
       user_markings: {
         Row: {
           color: string | null
@@ -1115,7 +1100,7 @@ export type Database = {
     }
     Enums: {
       history_t: "read" | "listen"
-      marking_t: "highlight" | "comment" | "like"
+      marking_t: "highlight" | "comment" | "like" | "summary"
       testament_t: "old" | "new"
     }
     CompositeTypes: {
@@ -1245,7 +1230,7 @@ export const Constants = {
   public: {
     Enums: {
       history_t: ["read", "listen"],
-      marking_t: ["highlight", "comment", "like"],
+      marking_t: ["highlight", "comment", "like", "summary"],
       testament_t: ["old", "new"],
     },
   },
