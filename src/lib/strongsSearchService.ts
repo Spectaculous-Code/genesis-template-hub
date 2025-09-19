@@ -1,5 +1,32 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export interface LexiconDefinition {
+  strongs_number: string;
+  definition_short: string | null;
+  definition_long: string | null;
+  lemma: string | null;
+  transliterations: string[] | null;
+  pronunciations: string[] | null;
+  part_of_speech: string | null;
+  language: string;
+}
+
+export const getLexiconDefinition = async (strongsNumber: string): Promise<LexiconDefinition | null> => {
+  const { data: lexiconData, error: lexiconError } = await (supabase as any)
+    .schema('bible_schema')
+    .from('strongs_lexicon')
+    .select('*')
+    .eq('strongs_number', strongsNumber)
+    .maybeSingle();
+
+  if (lexiconError) {
+    console.error('Error fetching lexicon definition:', lexiconError);
+    return null;
+  }
+
+  return lexiconData;
+};
+
 export interface StrongsSearchResult {
   verses: Array<{
     id: string;
@@ -43,7 +70,8 @@ export const searchByStrongsNumber = async (strongsNumber: string, targetVersion
     for (const pattern of searchPatterns) {
       console.log('Trying pattern:', pattern);
       
-      const { data: strongsWords, error: strongsError } = await supabase
+      const { data: strongsWords, error: strongsError } = await (supabase as any)
+        .schema('bible_schema')
         .from('kjv_strongs_words')
         .select(`
           verse_id,
@@ -130,7 +158,8 @@ export const searchByStrongsNumber = async (strongsNumber: string, targetVersion
     console.log('Target version code for search:', targetVersionCode);
 
     // Now find verses in the target version using these OSIS references
-    const { data: targetVerses, error: targetError } = await supabase
+    const { data: targetVerses, error: targetError } = await (supabase as any)
+      .schema('bible_schema')
       .from('verses')
       .select(`
         id,
