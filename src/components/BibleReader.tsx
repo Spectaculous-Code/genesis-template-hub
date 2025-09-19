@@ -24,7 +24,7 @@ interface BibleReaderProps {
   isFromLatestPosition?: boolean;
 }
 
-const BibleReader = ({ book, chapter, targetVerse, versionCode = 'fin2017', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }: BibleReaderProps) => {
+const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }: BibleReaderProps) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);

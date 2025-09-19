@@ -150,7 +150,7 @@ const MainContent = ({
     }
 
     try {
-      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'fin2017';
+      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
       await saveReadingPositionToDB(selectedBook, selectedChapter, currentVersionCode);
       
       toast({
@@ -311,7 +311,7 @@ const MainContent = ({
         return <UserHighlights />;
       
       default:
-        const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'fin2017';
+        const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
         return (
           <BibleReader
             book={selectedBook}

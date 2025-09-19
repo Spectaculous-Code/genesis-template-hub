@@ -58,7 +58,7 @@ export const getBibleVersions = async (): Promise<BibleVersion[]> => {
 };
 
 // Get all books for the default version
-export const getBibleBooks = async (versionCode: string = 'fin2017'): Promise<BibleBook[]> => {
+export const getBibleBooks = async (versionCode: string = 'finstlk201'): Promise<BibleBook[]> => {
   try {
     console.log('Fetching books for version:', versionCode);
     
@@ -125,7 +125,7 @@ export const getBibleBooks = async (versionCode: string = 'fin2017'): Promise<Bi
 };
 
 // Get chapter with verses
-export const getChapterData = async (bookName: string, chapterNumber: number, versionCode: string = 'fin2017'): Promise<ChapterWithVerses | null> => {
+export const getChapterData = async (bookName: string, chapterNumber: number, versionCode: string = 'finstlk201'): Promise<ChapterWithVerses | null> => {
   try {
     const supabaseQuery = (supabase as any);
     
@@ -196,7 +196,7 @@ export const getChapterData = async (bookName: string, chapterNumber: number, ve
 };
 
 // Get chapters for a book
-export const getBookChapters = async (bookName: string, versionCode: string = 'fin2017'): Promise<number> => {
+export const getBookChapters = async (bookName: string, versionCode: string = 'finstlk201'): Promise<number> => {
   try {
     const supabaseQuery = (supabase as any);
     
@@ -234,7 +234,7 @@ export const getBookChapters = async (bookName: string, versionCode: string = 'f
 };
 
 // Get next chapter data (book and chapter number)
-export const getNextChapter = async (currentBookName: string, currentChapter: number, versionCode: string = 'fin2017'): Promise<{book: string, chapter: number} | null> => {
+export const getNextChapter = async (currentBookName: string, currentChapter: number, versionCode: string = 'finstlk201'): Promise<{book: string, chapter: number} | null> => {
   try {
     const supabaseQuery = (supabase as any);
     
@@ -300,7 +300,7 @@ export const getNextChapter = async (currentBookName: string, currentChapter: nu
 };
 
 // Get previous chapter data (book and chapter number)
-export const getPreviousChapter = async (currentBookName: string, currentChapter: number, versionCode: string = 'fin2017'): Promise<{book: string, chapter: number} | null> => {
+export const getPreviousChapter = async (currentBookName: string, currentChapter: number, versionCode: string = 'finstlk201'): Promise<{book: string, chapter: number} | null> => {
   try {
     const supabaseQuery = (supabase as any);
     
