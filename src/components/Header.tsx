@@ -41,7 +41,7 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
     const fetchInitialData = async () => {
       const [books, versionsResult] = await Promise.all([
         getBibleBooks(),
-        supabase.from('bible_versions').select('id, name, code').eq('is_active', true).order('name')
+        (supabase as any).schema('bible_schema').from('bible_versions').select('id, name, code').eq('is_active', true).order('name')
       ]);
       
       setBibleBooks(books);

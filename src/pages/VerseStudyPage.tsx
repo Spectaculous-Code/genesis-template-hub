@@ -34,11 +34,12 @@ const VerseStudyPage = () => {
     if (savedVersionId) {
       // Get the version code from the version ID
       const getVersionCode = async () => {
-        const { data: versionData } = await supabase
+        const { data: versionData } = await (supabase as any)
+          .schema('bible_schema')
           .from('bible_versions')
           .select('code')
           .eq('id', savedVersionId)
-          .single();
+          .maybeSingle();
         
         if (versionData?.code) {
           setCurrentVersion(versionData.code);
@@ -70,11 +71,12 @@ const VerseStudyPage = () => {
       console.log('Using version:', currentVersion);
 
       // Get the version ID
-      const { data: versionData, error: versionError } = await supabase
+      const { data: versionData, error: versionError } = await (supabase as any)
+        .schema('bible_schema')
         .from('bible_versions')
         .select('id')
         .eq('code', currentVersion)
-        .single();
+        .maybeSingle();
 
       if (versionError || !versionData) {
         console.error('Version error:', versionError);
@@ -84,12 +86,13 @@ const VerseStudyPage = () => {
       console.log('Version found:', versionData);
 
       // Get the book ID - use the book name directly as it appears in the database
-      const { data: bookData, error: bookError } = await supabase
+      const { data: bookData, error: bookError } = await (supabase as any)
+        .schema('bible_schema')
         .from('books')
         .select('id')
         .eq('name', book) // Use book name directly (like "Matthew")
         .eq('version_id', versionData.id)
-        .single();
+        .maybeSingle();
 
       if (bookError || !bookData) {
         console.error('Book error:', bookError);
@@ -100,12 +103,13 @@ const VerseStudyPage = () => {
       console.log('Book found:', bookData);
 
       // Get the chapter ID
-      const { data: chapterData, error: chapterError } = await supabase
+      const { data: chapterData, error: chapterError } = await (supabase as any)
+        .schema('bible_schema')
         .from('chapters')
         .select('id')
         .eq('book_id', bookData.id)
         .eq('chapter_number', chapterNum)
-        .single();
+        .maybeSingle();
 
       if (chapterError || !chapterData) {
         console.error('Chapter error:', chapterError);
@@ -115,13 +119,14 @@ const VerseStudyPage = () => {
       console.log('Chapter found:', chapterData);
 
       // Get the specific verse - this is the same way the main Bible reader gets verses
-      const { data: verseData, error: verseError } = await supabase
+      const { data: verseData, error: verseError } = await (supabase as any)
+        .schema('bible_schema')
         .from('verses')
         .select('*')
         .eq('chapter_id', chapterData.id)
         .eq('version_id', versionData.id)
         .eq('verse_number', verseNum)
-        .single();
+        .maybeSingle();
 
       if (verseError || !verseData) {
         console.error('Verse error:', verseError);

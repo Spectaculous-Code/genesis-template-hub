@@ -95,7 +95,8 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
       console.log('Fetching KJV verse manually for:', { bookName, chapterNum, verseNum });
 
       // Get KJV version ID
-      const { data: kjvVersion, error: kjvVersionError } = await supabase
+      const { data: kjvVersion, error: kjvVersionError } = await (supabase as any)
+        .schema('bible_schema')
         .from('bible_versions')
         .select('id')
         .eq('code', 'KJV')

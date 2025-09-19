@@ -90,7 +90,8 @@ const MainContent = ({
 
     try {
       // First get the version ID
-      const { data: versionData } = await supabase
+      const { data: versionData } = await (supabase as any)
+        .schema('bible_schema')
         .from('bible_versions')
         .select('id')
         .eq('code', versionCode)
@@ -172,7 +173,7 @@ const MainContent = ({
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const versionsResult = await supabase.from('bible_versions').select('id, name, code').eq('is_active', true).order('name');
+      const versionsResult = await (supabase as any).schema('bible_schema').from('bible_versions').select('id, name, code').eq('is_active', true).order('name');
       
       if (versionsResult.data) {
         setBibleVersions(versionsResult.data);
