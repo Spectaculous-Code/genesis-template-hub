@@ -44,6 +44,7 @@ export const searchByStrongsNumber = async (strongsNumber: string, targetVersion
       console.log('Trying pattern:', pattern);
       
       const { data: strongsWords, error: strongsError } = await supabase
+        .schema('bible_schema')
         .from('kjv_strongs_words')
         .select(`
           verse_id,
@@ -131,6 +132,7 @@ export const searchByStrongsNumber = async (strongsNumber: string, targetVersion
 
     // Now find verses in the target version using these OSIS references
     const { data: targetVerses, error: targetError } = await supabase
+      .schema('bible_schema')
       .from('verses')
       .select(`
         id,
