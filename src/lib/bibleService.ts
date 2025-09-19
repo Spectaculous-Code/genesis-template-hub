@@ -39,7 +39,6 @@ export interface ChapterWithVerses {
 export const getBibleVersions = async (): Promise<BibleVersion[]> => {
   try {
     const response: any = await (supabase as any)
-      .schema('bible_schema')
       .from('bible_versions')
       .select('*')
       .eq('is_active', true)
@@ -67,7 +66,6 @@ export const getBibleBooks = async (versionCode: string = 'fin2017'): Promise<Bi
     
     // First get the version
     const versionResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('bible_versions')
       .select('id')
       .eq('code', versionCode)
@@ -82,7 +80,6 @@ export const getBibleBooks = async (versionCode: string = 'fin2017'): Promise<Bi
 
     // Get books for this specific version
     const booksResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('books')
       .select('id, name, testament, chapters_count, book_order')
       .eq('version_id', versionResponse.data.id)
@@ -131,7 +128,6 @@ export const getChapterData = async (bookName: string, chapterNumber: number, ve
     
     // Get the version first
     const versionResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('bible_versions')
       .select('id')
       .eq('code', versionCode)
@@ -144,7 +140,6 @@ export const getChapterData = async (bookName: string, chapterNumber: number, ve
 
     // Get the book for this specific version
     const bookResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('books')
       .select('id')
       .eq('name', bookName)
@@ -158,7 +153,6 @@ export const getChapterData = async (bookName: string, chapterNumber: number, ve
 
     // Get the chapter
     const chapterResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('chapters')
       .select('id')
       .eq('book_id', bookResponse.data.id)
@@ -172,7 +166,6 @@ export const getChapterData = async (bookName: string, chapterNumber: number, ve
 
     // Get verses for this chapter
     const versesResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('verses')
       .select('*')
       .eq('chapter_id', chapterResponse.data.id)
@@ -202,7 +195,6 @@ export const getBookChapters = async (bookName: string, versionCode: string = 'f
     
     // First get the version
     const versionResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('bible_versions')
       .select('id')
       .eq('code', versionCode)
@@ -214,7 +206,6 @@ export const getBookChapters = async (bookName: string, versionCode: string = 'f
     }
 
     const bookResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('books')
       .select('chapters_count')
       .eq('name', bookName)
@@ -240,7 +231,6 @@ export const getNextChapter = async (currentBookName: string, currentChapter: nu
     
     // First get the version
     const versionResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('bible_versions')
       .select('id')
       .eq('code', versionCode)
@@ -253,7 +243,6 @@ export const getNextChapter = async (currentBookName: string, currentChapter: nu
 
     // First get the current book
     const currentBookResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('books')
       .select('id, chapters_count, book_order')
       .eq('name', currentBookName)
@@ -275,7 +264,6 @@ export const getNextChapter = async (currentBookName: string, currentChapter: nu
 
     // Otherwise, get the next book
     const nextBookResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('books')
       .select('name, chapters_count')
       .eq('version_id', versionResponse.data.id)
@@ -306,7 +294,6 @@ export const getPreviousChapter = async (currentBookName: string, currentChapter
     
     // First get the version
     const versionResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('bible_versions')
       .select('id')
       .eq('code', versionCode)
@@ -319,7 +306,6 @@ export const getPreviousChapter = async (currentBookName: string, currentChapter
 
     // First get the current book
     const currentBookResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('books')
       .select('id, chapters_count, book_order')
       .eq('name', currentBookName)
@@ -341,7 +327,6 @@ export const getPreviousChapter = async (currentBookName: string, currentChapter
 
     // Otherwise, get the previous book
     const prevBookResponse = await supabaseQuery
-      .schema('bible_schema')
       .from('books')
       .select('name, chapters_count')
       .eq('version_id', versionResponse.data.id)

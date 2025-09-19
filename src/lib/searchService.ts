@@ -136,7 +136,6 @@ export async function searchReference(reference: SearchResult['reference'], vers
 
   try {
     let query = (supabase as any)
-      .schema('bible_schema')
       .from('verses')
       .select(`
         id,
@@ -199,7 +198,6 @@ export async function searchText(searchTerm: string, versionId?: string): Promis
 
   try {
     let query = (supabase as any)
-      .schema('bible_schema')
       .from('verses')
       .select(`
         id,
