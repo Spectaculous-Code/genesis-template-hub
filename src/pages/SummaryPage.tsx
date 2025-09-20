@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Plus, FileText, Calendar, User, BookOpen, Search } from "lucide-react";
+import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
@@ -201,6 +201,19 @@ const SummaryPage = () => {
         />
 
         <div className="flex-1 flex flex-col">
+          {/* Go Back Button */}
+          <div className="bg-background border-b border-border/50 px-4 py-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Takaisin
+            </Button>
+          </div>
+
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
