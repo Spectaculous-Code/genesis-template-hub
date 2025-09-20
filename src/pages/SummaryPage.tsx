@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft } from "lucide-react";
+import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft, Edit2, Check, X, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
@@ -41,6 +41,15 @@ const SummaryPage = () => {
   const [latestSummary, setLatestSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Edit states
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
+  const [editingSubtitle, setEditingSubtitle] = useState<string | null>(null);
+  const [editSubtitleValue, setEditSubtitleValue] = useState("");
+  const [addingNewSubtitle, setAddingNewSubtitle] = useState(false);
+  const [newSubtitleValue, setNewSubtitleValue] = useState("");
+  
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -168,6 +177,165 @@ const SummaryPage = () => {
     }
   };
 
+  // Edit functionality
+  const startEditingTitle = () => {
+    if (latestSummary) {
+      setEditTitleValue(latestSummary.title);
+      setEditingTitle(true);
+    }
+  };
+
+  const saveTitle = async () => {
+    if (!latestSummary || !editTitleValue.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('summaries')
+        .update({ title: editTitleValue.trim() })
+        .eq('id', latestSummary.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Tallennettu",
+        description: "Koosteen nimi päivitetty"
+      });
+
+      setEditingTitle(false);
+      fetchSummaries();
+    } catch (error) {
+      console.error('Error updating title:', error);
+      toast({
+        title: "Virhe",
+        description: "Nimen päivittäminen epäonnistui",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelTitleEdit = () => {
+    setEditingTitle(false);
+    setEditTitleValue("");
+  };
+
+  const startEditingSubtitle = (groupId: string, currentSubtitle: string) => {
+    setEditingSubtitle(groupId);
+    setEditSubtitleValue(currentSubtitle);
+  };
+
+  const saveSubtitle = async () => {
+    if (!editingSubtitle || !editSubtitleValue.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('summary_groups')
+        .update({ subtitle: editSubtitleValue.trim() })
+        .eq('id', editingSubtitle);
+
+      if (error) throw error;
+
+      toast({
+        title: "Tallennettu",
+        description: "Alaotsikko päivitetty"
+      });
+
+      setEditingSubtitle(null);
+      setEditSubtitleValue("");
+      fetchSummaries();
+    } catch (error) {
+      console.error('Error updating subtitle:', error);
+      toast({
+        title: "Virhe",
+        description: "Alaotsikon päivittäminen epäonnistui",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelSubtitleEdit = () => {
+    setEditingSubtitle(null);
+    setEditSubtitleValue("");
+  };
+
+  const startAddingNewSubtitle = () => {
+    setAddingNewSubtitle(true);
+    setNewSubtitleValue("");
+  };
+
+  const saveNewSubtitle = async () => {
+    if (!latestSummary || !newSubtitleValue.trim()) return;
+
+    try {
+      // Get the highest group_order for this summary
+      const { data: existingGroups } = await supabase
+        .from('summary_groups')
+        .select('group_order')
+        .eq('summary_id', latestSummary.id)
+        .order('group_order', { ascending: false })
+        .limit(1);
+
+      const nextOrder = existingGroups && existingGroups.length > 0 
+        ? existingGroups[0].group_order + 1 
+        : 0;
+
+      const { error } = await supabase
+        .from('summary_groups')
+        .insert({
+          summary_id: latestSummary.id,
+          subtitle: newSubtitleValue.trim(),
+          group_order: nextOrder
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Lisätty",
+        description: "Uusi alaotsikko luotu"
+      });
+
+      setAddingNewSubtitle(false);
+      setNewSubtitleValue("");
+      fetchSummaries();
+    } catch (error) {
+      console.error('Error adding new subtitle:', error);
+      toast({
+        title: "Virhe",
+        description: "Alaotsikon lisääminen epäonnistui",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelNewSubtitle = () => {
+    setAddingNewSubtitle(false);
+    setNewSubtitleValue("");
+  };
+
+  const deleteBibleReference = async (referenceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('summary_bible_references')
+        .delete()
+        .eq('id', referenceId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Poistettu",
+        description: "Raamatunviittaus poistettu"
+      });
+
+      fetchSummaries();
+    } catch (error) {
+      console.error('Error deleting bible reference:', error);
+      toast({
+        title: "Virhe",
+        description: "Viittauksen poistaminen epäonnistui",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <SidebarProvider defaultOpen={false}>
@@ -259,11 +427,36 @@ const SummaryPage = () => {
                   <Card>
                     <CardHeader>
                       <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
-                            {latestSummary.title}
-                          </CardTitle>
+                        <div className="flex-1">
+                          {editingTitle ? (
+                            <div className="flex items-center gap-2 mb-2">
+                              <Input
+                                value={editTitleValue}
+                                onChange={(e) => setEditTitleValue(e.target.value)}
+                                className="text-xl font-semibold"
+                                onKeyPress={(e) => e.key === 'Enter' && saveTitle()}
+                              />
+                              <Button size="sm" onClick={saveTitle}>
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={cancelTitleEdit}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <CardTitle className="flex items-center gap-2 group">
+                              <FileText className="h-5 w-5" />
+                              {latestSummary.title}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={startEditingTitle}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </CardTitle>
+                          )}
                           <CardDescription className="flex items-center gap-4 mt-2">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-4 w-4" />
@@ -285,17 +478,52 @@ const SummaryPage = () => {
                         <div className="space-y-6">
                           {latestSummary.groups.map((group) => (
                             <div key={group.id} className="border rounded-lg p-4">
-                              <h3 className="font-semibold text-lg mb-2">{group.subtitle}</h3>
+                              {editingSubtitle === group.id ? (
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Input
+                                    value={editSubtitleValue}
+                                    onChange={(e) => setEditSubtitleValue(e.target.value)}
+                                    className="font-semibold"
+                                    onKeyPress={(e) => e.key === 'Enter' && saveSubtitle()}
+                                  />
+                                  <Button size="sm" onClick={saveSubtitle}>
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={cancelSubtitleEdit}>
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 mb-2 group">
+                                  <h3 className="font-semibold text-lg">{group.subtitle}</h3>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditingSubtitle(group.id, group.subtitle)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
                               {group.text_content && (
                                 <p className="text-muted-foreground mb-3">{group.text_content}</p>
                               )}
                               {group.bible_references.length > 0 && (
                                 <div className="space-y-1">
                                   <h4 className="text-sm font-medium text-muted-foreground">Raamatunviittaukset:</h4>
-                                  <ul className="list-disc list-inside space-y-1">
+                                  <ul className="space-y-1">
                                     {group.bible_references.map((ref) => (
-                                      <li key={ref.id} className="text-sm">
-                                        {ref.reference_text}
+                                      <li key={ref.id} className="flex items-center gap-2 group">
+                                        <span className="text-sm flex-1">• {ref.reference_text}</span>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => deleteBibleReference(ref.id)}
+                                          className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
                                       </li>
                                     ))}
                                   </ul>
@@ -303,6 +531,35 @@ const SummaryPage = () => {
                               )}
                             </div>
                           ))}
+                          
+                          {/* Add new subtitle section */}
+                          <div className="border rounded-lg p-4 bg-muted/30">
+                            {addingNewSubtitle ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  placeholder="Uuden alaotsikon nimi..."
+                                  value={newSubtitleValue}
+                                  onChange={(e) => setNewSubtitleValue(e.target.value)}
+                                  onKeyPress={(e) => e.key === 'Enter' && saveNewSubtitle()}
+                                />
+                                <Button size="sm" onClick={saveNewSubtitle}>
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={cancelNewSubtitle}>
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                onClick={startAddingNewSubtitle}
+                                className="w-full justify-start text-muted-foreground hover:text-foreground"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Lisää uusi alaotsikko
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </CardContent>
