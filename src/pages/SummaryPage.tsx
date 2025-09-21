@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft, Edit2, Check, X, Trash2 } from "lucide-react";
+import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft, Edit2, Check, X, Trash2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
@@ -49,6 +49,11 @@ const SummaryPage = () => {
   const [editSubtitleValue, setEditSubtitleValue] = useState("");
   const [addingNewSubtitle, setAddingNewSubtitle] = useState(false);
   const [newSubtitleValue, setNewSubtitleValue] = useState("");
+  
+  // Bible verse expansion states
+  const [expandedVerses, setExpandedVerses] = useState<Set<string>>(new Set());
+  const [verseTexts, setVerseTexts] = useState<Map<string, string>>(new Map());
+  const [loadingVerses, setLoadingVerses] = useState<Set<string>>(new Set());
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -336,6 +341,77 @@ const SummaryPage = () => {
     }
   };
 
+  const toggleVerseExpansion = async (referenceId: string, referenceText: string) => {
+    const isExpanded = expandedVerses.has(referenceId);
+    
+    if (isExpanded) {
+      // Collapse verse
+      const newExpanded = new Set(expandedVerses);
+      newExpanded.delete(referenceId);
+      setExpandedVerses(newExpanded);
+    } else {
+      // Expand verse - first check if we already have the text
+      if (!verseTexts.has(referenceId)) {
+        await fetchVerseText(referenceId, referenceText);
+      }
+      
+      const newExpanded = new Set(expandedVerses);
+      newExpanded.add(referenceId);
+      setExpandedVerses(newExpanded);
+    }
+  };
+
+  const fetchVerseText = async (referenceId: string, referenceText: string) => {
+    if (loadingVerses.has(referenceId)) return;
+    
+    const newLoading = new Set(loadingVerses);
+    newLoading.add(referenceId);
+    setLoadingVerses(newLoading);
+
+    try {
+      // For now, we'll search for verses that match the reference text
+      // This is a simplified approach - in a real implementation, you'd want to parse the reference properly
+      const { data: verses, error } = await supabase
+        .from('verses')
+        .select(`
+          text,
+          verse_number,
+          chapters!inner(
+            chapter_number,
+            books!inner(
+              name
+            )
+          )
+        `)
+        .ilike('chapters.books.name', `%${referenceText.split(' ')[0]}%`)
+        .limit(1);
+
+      if (error) {
+        console.error('Error fetching verse:', error);
+        throw error;
+      }
+
+      const newTexts = new Map(verseTexts);
+      if (verses && verses.length > 0) {
+        newTexts.set(referenceId, verses[0].text);
+      } else {
+        // Fallback - show a message that the verse wasn't found
+        newTexts.set(referenceId, `Jakeen "${referenceText}" tekstiä ei löytynyt tietokannasta.`);
+      }
+      setVerseTexts(newTexts);
+      
+    } catch (error) {
+      console.error('Error fetching verse text:', error);
+      const newTexts = new Map(verseTexts);
+      newTexts.set(referenceId, `Virhe ladattaessa jakeen "${referenceText}" tekstiä.`);
+      setVerseTexts(newTexts);
+    } finally {
+      const newLoading = new Set(loadingVerses);
+      newLoading.delete(referenceId);
+      setLoadingVerses(newLoading);
+    }
+  };
+
   if (loading) {
     return (
       <SidebarProvider defaultOpen={false}>
@@ -512,21 +588,45 @@ const SummaryPage = () => {
                               {group.bible_references.length > 0 && (
                                 <div className="space-y-1">
                                   <h4 className="text-sm font-medium text-muted-foreground">Raamatunviittaukset:</h4>
-                                  <ul className="space-y-1">
-                                    {group.bible_references.map((ref) => (
-                                      <li key={ref.id} className="flex items-center gap-2 group">
-                                        <span className="text-sm flex-1">• {ref.reference_text}</span>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => deleteBibleReference(ref.id)}
-                                          className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </li>
-                                    ))}
-                                  </ul>
+                                   <ul className="space-y-2">
+                                     {group.bible_references.map((ref) => (
+                                       <li key={ref.id} className="group">
+                                         <div className="flex items-center gap-2">
+                                           <Button
+                                             size="sm"
+                                             variant="ghost"
+                                             onClick={() => toggleVerseExpansion(ref.id, ref.reference_text)}
+                                             className="h-6 w-6 p-0 flex-shrink-0"
+                                             disabled={loadingVerses.has(ref.id)}
+                                           >
+                                             {loadingVerses.has(ref.id) ? (
+                                               <div className="h-3 w-3 border border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                                             ) : expandedVerses.has(ref.id) ? (
+                                               <EyeOff className="h-3 w-3" />
+                                             ) : (
+                                               <Eye className="h-3 w-3" />
+                                             )}
+                                           </Button>
+                                           <span className="text-sm flex-1">• {ref.reference_text}</span>
+                                           <Button
+                                             size="sm"
+                                             variant="ghost"
+                                             onClick={() => deleteBibleReference(ref.id)}
+                                             className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive h-6 w-6 p-0"
+                                           >
+                                             <Trash2 className="h-3 w-3" />
+                                           </Button>
+                                         </div>
+                                         {expandedVerses.has(ref.id) && verseTexts.has(ref.id) && (
+                                           <div className="ml-8 mt-2 p-3 bg-muted/50 rounded-md border-l-2 border-primary/30">
+                                             <p className="text-sm leading-relaxed text-foreground">
+                                               {verseTexts.get(ref.id)}
+                                             </p>
+                                           </div>
+                                         )}
+                                       </li>
+                                     ))}
+                                   </ul>
                                 </div>
                               )}
                             </div>
