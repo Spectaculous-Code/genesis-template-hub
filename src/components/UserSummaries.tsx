@@ -3,28 +3,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, ExternalLink } from 'lucide-react';
+import { FileText, ExternalLink, Eye } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getFinnishBookName } from '@/lib/bookNameMapping';
+import { useNavigate } from 'react-router-dom';
 
-interface UserSummary {
+interface Summary {
   id: string;
-  content: string;
+  title: string;
   created_at: string;
-  verses: {
-    verse_number: number;
-    chapters: {
-      chapter_number: number;
-      books: {
-        name: string;
-      };
-    };
-  };
+  updated_at: string;
 }
 
 const UserSummaries = () => {
   const { user } = useAuth();
-  const [summaries, setSummaries] = useState<UserSummary[]>([]);
+  const navigate = useNavigate();
+  const [summaries, setSummaries] = useState<Summary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,22 +33,10 @@ const UserSummaries = () => {
 
     try {
       const { data, error } = await supabase
-        .from('user_markings')
-        .select(`
-          id,
-          content,
-          created_at,
-          verses!inner(
-            verse_number,
-            chapters!inner(
-              chapter_number,
-              books!inner(name)
-            )
-          )
-        `)
+        .from('summaries')
+        .select('id, title, created_at, updated_at')
         .eq('user_id', user.id)
-        .eq('marking_type', 'comment')
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching summaries:', error);
@@ -67,6 +48,10 @@ const UserSummaries = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewSummary = (summaryId: string) => {
+    navigate(`/summaries?id=${summaryId}`);
   };
 
   if (!user) {
@@ -127,21 +112,22 @@ const UserSummaries = () => {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">
-                  {getFinnishBookName(summary.verses.chapters.books.name)} {' '}
-                  {summary.verses.chapters.chapter_number}:{summary.verses.verse_number}
+                  {summary.title}
                 </CardTitle>
-                <Button variant="outline" size="sm">
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Avaa jae
+                <Button variant="outline" size="sm" onClick={() => handleViewSummary(summary.id)}>
+                  <Eye className="h-4 w-4 mr-1" />
+                  Näytä koosta
                 </Button>
               </div>
               <CardDescription>
-                {new Date(summary.created_at).toLocaleDateString('fi-FI')}
+                Luotu: {new Date(summary.created_at).toLocaleDateString('fi-FI')}
+                {summary.updated_at !== summary.created_at && (
+                  <span className="ml-2">
+                    • Päivitetty: {new Date(summary.updated_at).toLocaleDateString('fi-FI')}
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-relaxed">{summary.content}</p>
-            </CardContent>
           </Card>
         ))}
       </div>
