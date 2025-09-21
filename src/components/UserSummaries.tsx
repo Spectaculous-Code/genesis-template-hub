@@ -116,7 +116,7 @@ const UserSummaries = () => {
                 </CardTitle>
                 <Button variant="outline" size="sm" onClick={() => handleViewSummary(summary.id)}>
                   <Eye className="h-4 w-4 mr-1" />
-                  Näytä koosta
+                  Näytä kooste
                 </Button>
               </div>
               <CardDescription>
