@@ -369,8 +369,69 @@ const SummaryPage = () => {
     setLoadingVerses(newLoading);
 
     try {
-      // For now, we'll search for verses that match the reference text
-      // This is a simplified approach - in a real implementation, you'd want to parse the reference properly
+      // Parse the reference (e.g., "Matthew.1:2", "Matt.1:2", "1. Moos. 1:1")
+      const parseReference = (ref: string) => {
+        // Remove extra spaces and normalize
+        const normalized = ref.trim();
+        
+        // Try different patterns
+        // Pattern 1: "Matthew.1:2" or "Matt.1:2"
+        let match = normalized.match(/^([^.]+)\.(\d+):(\d+)$/);
+        if (match) {
+          return {
+            book: match[1].trim(),
+            chapter: parseInt(match[2]),
+            verse: parseInt(match[3])
+          };
+        }
+        
+        // Pattern 2: "Matthew 1:2" or "Matt 1:2"
+        match = normalized.match(/^([^0-9]+)\s+(\d+):(\d+)$/);
+        if (match) {
+          return {
+            book: match[1].trim(),
+            chapter: parseInt(match[2]),
+            verse: parseInt(match[3])
+          };
+        }
+        
+        // Pattern 3: "1. Moos. 1:1" (Finnish style)
+        match = normalized.match(/^(\d+\.\s*\w+\.?)\s+(\d+):(\d+)$/);
+        if (match) {
+          return {
+            book: match[1].trim(),
+            chapter: parseInt(match[2]),
+            verse: parseInt(match[3])
+          };
+        }
+        
+        return null;
+      };
+
+      const parsed = parseReference(referenceText);
+      if (!parsed) {
+        const newTexts = new Map(verseTexts);
+        newTexts.set(referenceId, `Viittauksen "${referenceText}" muoto ei ole tuettu.`);
+        setVerseTexts(newTexts);
+        return;
+      }
+
+      // Create book name variations to search for
+      const bookVariations = [
+        parsed.book,
+        parsed.book.replace(/\.$/, ''), // Remove trailing dot
+        parsed.book.toLowerCase(),
+        parsed.book.toUpperCase()
+      ];
+
+      // Add common abbreviations for Matthew
+      if (parsed.book.toLowerCase().includes('matthew') || parsed.book.toLowerCase().includes('matt')) {
+        bookVariations.push('Matthew', 'Matt', 'Matt.');
+      }
+
+      console.log('Searching for verse:', parsed, 'Book variations:', bookVariations);
+
+      // Search for the verse using the parsed information
       const { data: verses, error } = await supabase
         .from('verses')
         .select(`
@@ -379,11 +440,19 @@ const SummaryPage = () => {
           chapters!inner(
             chapter_number,
             books!inner(
-              name
+              name,
+              name_abbreviation,
+              code
             )
           )
         `)
-        .ilike('chapters.books.name', `%${referenceText.split(' ')[0]}%`)
+        .eq('verse_number', parsed.verse)
+        .eq('chapters.chapter_number', parsed.chapter)
+        .or(
+          bookVariations.map(variation => 
+            `chapters.books.name.ilike.%${variation}%,chapters.books.name_abbreviation.ilike.%${variation}%,chapters.books.code.ilike.%${variation}%`
+          ).join(',')
+        )
         .limit(1);
 
       if (error) {
@@ -393,10 +462,36 @@ const SummaryPage = () => {
 
       const newTexts = new Map(verseTexts);
       if (verses && verses.length > 0) {
-        newTexts.set(referenceId, verses[0].text);
+        const verse = verses[0];
+        const bookName = verse.chapters.books.name;
+        const chapterNum = verse.chapters.chapter_number;
+        const verseNum = verse.verse_number;
+        newTexts.set(referenceId, `${bookName} ${chapterNum}:${verseNum} - ${verse.text}`);
       } else {
-        // Fallback - show a message that the verse wasn't found
-        newTexts.set(referenceId, `Jakeen "${referenceText}" tekstiä ei löytynyt tietokannasta.`);
+        // Try a broader search if exact match fails
+        const { data: broadSearch } = await supabase
+          .from('verses')
+          .select(`
+            text,
+            verse_number,
+            chapters!inner(
+              chapter_number,
+              books!inner(
+                name,
+                name_abbreviation
+              )
+            )
+          `)
+          .eq('chapters.chapter_number', parsed.chapter)
+          .or(`chapters.books.name.ilike.%${parsed.book}%,chapters.books.name_abbreviation.ilike.%${parsed.book}%`)
+          .limit(5);
+
+        if (broadSearch && broadSearch.length > 0) {
+          const foundBooks = broadSearch.map(v => v.chapters.books.name).join(', ');
+          newTexts.set(referenceId, `Jae ${parsed.verse} ei löytynyt luvusta ${parsed.chapter}. Löytyi kirjoja: ${foundBooks}`);
+        } else {
+          newTexts.set(referenceId, `Jakeen "${referenceText}" tekstiä ei löytynyt. Tarkista viittauksen muoto (esim. Matt.1:2).`);
+        }
       }
       setVerseTexts(newTexts);
       
