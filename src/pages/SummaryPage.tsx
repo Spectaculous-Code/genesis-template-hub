@@ -416,23 +416,10 @@ const SummaryPage = () => {
         return;
       }
 
-      // Create book name variations to search for
-      const bookVariations = [
-        parsed.book,
-        parsed.book.replace(/\.$/, ''), // Remove trailing dot
-        parsed.book.toLowerCase(),
-        parsed.book.toUpperCase()
-      ];
+      console.log('Searching for verse:', parsed);
 
-      // Add common abbreviations for Matthew
-      if (parsed.book.toLowerCase().includes('matthew') || parsed.book.toLowerCase().includes('matt')) {
-        bookVariations.push('Matthew', 'Matt', 'Matt.');
-      }
-
-      console.log('Searching for verse:', parsed, 'Book variations:', bookVariations);
-
-      // Search for the verse using the parsed information
-      const { data: verses, error } = await supabase
+      // Try direct search with exact book name first
+      let { data: verses, error } = await supabase
         .from('verses')
         .select(`
           text,
@@ -448,12 +435,58 @@ const SummaryPage = () => {
         `)
         .eq('verse_number', parsed.verse)
         .eq('chapters.chapter_number', parsed.chapter)
-        .or(
-          bookVariations.map(variation => 
-            `chapters.books.name.ilike.%${variation}%,chapters.books.name_abbreviation.ilike.%${variation}%,chapters.books.code.ilike.%${variation}%`
-          ).join(',')
-        )
+        .ilike('chapters.books.name', `%${parsed.book}%`)
         .limit(1);
+
+      // If no results with name, try with abbreviation
+      if (!verses || verses.length === 0) {
+        const result = await supabase
+          .from('verses')
+          .select(`
+            text,
+            verse_number,
+            chapters!inner(
+              chapter_number,
+              books!inner(
+                name,
+                name_abbreviation,
+                code
+              )
+            )
+          `)
+          .eq('verse_number', parsed.verse)
+          .eq('chapters.chapter_number', parsed.chapter)
+          .ilike('chapters.books.name_abbreviation', `%${parsed.book}%`)
+          .limit(1);
+        
+        verses = result.data;
+        error = result.error;
+      }
+
+      // If still no results, try with code
+      if (!verses || verses.length === 0) {
+        const result = await supabase
+          .from('verses')
+          .select(`
+            text,
+            verse_number,
+            chapters!inner(
+              chapter_number,
+              books!inner(
+                name,
+                name_abbreviation,
+                code
+              )
+            )
+          `)
+          .eq('verse_number', parsed.verse)
+          .eq('chapters.chapter_number', parsed.chapter)
+          .ilike('chapters.books.code', `%${parsed.book}%`)
+          .limit(1);
+        
+        verses = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error('Error fetching verse:', error);
@@ -468,30 +501,7 @@ const SummaryPage = () => {
         const verseNum = verse.verse_number;
         newTexts.set(referenceId, `${bookName} ${chapterNum}:${verseNum} - ${verse.text}`);
       } else {
-        // Try a broader search if exact match fails
-        const { data: broadSearch } = await supabase
-          .from('verses')
-          .select(`
-            text,
-            verse_number,
-            chapters!inner(
-              chapter_number,
-              books!inner(
-                name,
-                name_abbreviation
-              )
-            )
-          `)
-          .eq('chapters.chapter_number', parsed.chapter)
-          .or(`chapters.books.name.ilike.%${parsed.book}%,chapters.books.name_abbreviation.ilike.%${parsed.book}%`)
-          .limit(5);
-
-        if (broadSearch && broadSearch.length > 0) {
-          const foundBooks = broadSearch.map(v => v.chapters.books.name).join(', ');
-          newTexts.set(referenceId, `Jae ${parsed.verse} ei löytynyt luvusta ${parsed.chapter}. Löytyi kirjoja: ${foundBooks}`);
-        } else {
-          newTexts.set(referenceId, `Jakeen "${referenceText}" tekstiä ei löytynyt. Tarkista viittauksen muoto (esim. Matt.1:2).`);
-        }
+        newTexts.set(referenceId, `Jakeen "${referenceText}" tekstiä ei löytynyt tietokannasta.`);
       }
       setVerseTexts(newTexts);
       
