@@ -418,75 +418,14 @@ const SummaryPage = () => {
 
       console.log('Searching for verse:', parsed);
 
-      // Try direct search with exact book name first
-      let { data: verses, error } = await supabase
-        .from('verses')
-        .select(`
-          text,
-          verse_number,
-          chapters!inner(
-            chapter_number,
-            books!inner(
-              name,
-              name_abbreviation,
-              code
-            )
-          )
-        `)
-        .eq('verse_number', parsed.verse)
-        .eq('chapters.chapter_number', parsed.chapter)
-        .ilike('chapters.books.name', `%${parsed.book}%`)
-        .limit(1);
-
-      // If no results with name, try with abbreviation
-      if (!verses || verses.length === 0) {
-        const result = await supabase
-          .from('verses')
-          .select(`
-            text,
-            verse_number,
-            chapters!inner(
-              chapter_number,
-              books!inner(
-                name,
-                name_abbreviation,
-                code
-              )
-            )
-          `)
-          .eq('verse_number', parsed.verse)
-          .eq('chapters.chapter_number', parsed.chapter)
-          .ilike('chapters.books.name_abbreviation', `%${parsed.book}%`)
-          .limit(1);
-        
-        verses = result.data;
-        error = result.error;
-      }
-
-      // If still no results, try with code
-      if (!verses || verses.length === 0) {
-        const result = await supabase
-          .from('verses')
-          .select(`
-            text,
-            verse_number,
-            chapters!inner(
-              chapter_number,
-              books!inner(
-                name,
-                name_abbreviation,
-                code
-              )
-            )
-          `)
-          .eq('verse_number', parsed.verse)
-          .eq('chapters.chapter_number', parsed.chapter)
-          .ilike('chapters.books.code', `%${parsed.book}%`)
-          .limit(1);
-        
-        verses = result.data;
-        error = result.error;
-      }
+      // Use the dedicated get_verse_by_ref function
+      const { data: verses, error } = await supabase.rpc('get_verse_by_ref' as any, {
+        p_ref_book: parsed.book,
+        p_chapter: parsed.chapter,
+        p_verse: parsed.verse,
+        p_version_code: null, // Use default version (finstlk201)
+        p_language_code: 'fi'
+      });
 
       if (error) {
         console.error('Error fetching verse:', error);
@@ -494,12 +433,9 @@ const SummaryPage = () => {
       }
 
       const newTexts = new Map(verseTexts);
-      if (verses && verses.length > 0) {
+      if (verses && Array.isArray(verses) && verses.length > 0) {
         const verse = verses[0];
-        const bookName = verse.chapters.books.name;
-        const chapterNum = verse.chapters.chapter_number;
-        const verseNum = verse.verse_number;
-        newTexts.set(referenceId, `${bookName} ${chapterNum}:${verseNum} - ${verse.text}`);
+        newTexts.set(referenceId, `${verse.osis} - ${verse.text_content}`);
       } else {
         newTexts.set(referenceId, `Jakeen "${referenceText}" tekstiä ei löytynyt tietokannasta.`);
       }
