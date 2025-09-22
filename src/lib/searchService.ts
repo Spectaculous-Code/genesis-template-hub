@@ -3,13 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 export interface SearchResult {
   type: 'reference' | 'text';
   verses?: {
-    id: string;
-    text: string;
+    verse_id: string;
+    text_content: string;
     verse_number: number;
     chapter_number: number;
     book_name: string;
-    book_id: string;
-    chapter_id: string;
+    osis: string;
   }[];
   reference?: {
     book: string;
@@ -49,7 +48,7 @@ export function parseBibleReference(query: string): SearchResult['reference'] | 
       }
 
       return {
-        book: normalizeBookName(bookPart),
+        book: bookPart, // Let DB function handle normalization
         chapter,
         verses
       };
@@ -59,126 +58,36 @@ export function parseBibleReference(query: string): SearchResult['reference'] | 
   return null;
 }
 
-// Normalize book names to match database
-function normalizeBookName(bookPart: string): string {
-  const bookMappings: Record<string, string> = {
-    // Finnish/German abbreviations to English book names
-    '1joh': 'I John',
-    '2joh': 'II John', 
-    '3joh': 'III John',
-    'joh': 'John',
-    'johannes': 'John',
-    '1johannes': 'I John',
-    '2johannes': 'II John',
-    '3johannes': 'III John',
-    '1moos': 'Genesis',
-    '2moos': 'Exodus',
-    '3moos': 'Leviticus',
-    '4moos': 'Numbers',
-    '5moos': 'Deuteronomy',
-    'matt': 'Matthew',
-    'matteus': 'Matthew',
-    'mark': 'Mark',
-    'markus': 'Mark',
-    'luuk': 'Luke',
-    'luukas': 'Luke',
-    'apt': 'Acts',
-    'apostolienteot': 'Acts',
-    'room': 'Romans',
-    'roomalaiset': 'Romans',
-    '1kor': 'I Corinthians',
-    '2kor': 'II Corinthians',
-    '1korinttilaiset': 'I Corinthians',
-    '2korinttilaiset': 'II Corinthians',
-    'gal': 'Galatians',
-    'galatalaiset': 'Galatians',
-    'ef': 'Ephesians',
-    'efesolaiset': 'Ephesians',
-    'fil': 'Philippians',
-    'filippiläiset': 'Philippians',
-    'kol': 'Colossians',
-    'kolossalaiset': 'Colossians',
-    '1tess': 'I Thessalonians',
-    '2tess': 'II Thessalonians',
-    '1tessalonikalaiset': 'I Thessalonians',
-    '2tessalonikalaiset': 'II Thessalonians',
-    '1tim': 'I Timothy',
-    '2tim': 'II Timothy',
-    '1timoteus': 'I Timothy',
-    '2timoteus': 'II Timothy',
-    'tit': 'Titus',
-    'titus': 'Titus',
-    'filem': 'Philemon',
-    'filemon': 'Philemon',
-    'hebr': 'Hebrews',
-    'heprealaiset': 'Hebrews',
-    'jaak': 'James',
-    'jaakob': 'James',
-    '1piet': 'I Peter',
-    '2piet': 'II Peter',
-    '1pietari': 'I Peter',
-    '2pietari': 'II Peter',
-    'juud': 'Jude',
-    'juuda': 'Jude',
-    'ilm': 'Revelation of John',
-    'ilmestys': 'Revelation of John'
-  };
+// Removed - book normalization is now handled by DB functions
 
-  const normalized = bookPart.toLowerCase().replace(/\s/g, '');
-  return bookMappings[normalized] || bookPart;
-}
-
-// Search for Bible references
-export async function searchReference(reference: SearchResult['reference'], versionId?: string): Promise<SearchResult> {
+// Search for Bible references using RPC function
+export async function searchReference(reference: SearchResult['reference'], versionCode?: string): Promise<SearchResult> {
   if (!reference) {
     return { type: 'reference', verses: [] };
   }
 
   try {
-    let query = (supabase as any)
-      .schema('bible_schema')
-      .from('verses')
-      .select(`
-        id,
-        text,
-        verse_number,
-        chapters!inner(
-          chapter_number,
-          books!inner(
-            name,
-            id
-          ),
-          id
-        )
-      `)
-      .eq('chapters.books.name', reference.book)
-      .eq('chapters.chapter_number', reference.chapter);
-
-    // Filter by version if provided
-    if (versionId) {
-      query = query.eq('version_id', versionId);
-    }
-
-    if (reference.verses && reference.verses.length > 0) {
-      query = query.in('verse_number', reference.verses);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await (supabase.rpc as any)('get_verses_by_ref', {
+      p_ref_book: reference.book,
+      p_chapter: reference.chapter,
+      p_verses: reference.verses || null, // null = return all verses of chapter
+      p_version_code: versionCode || 'finstlk201',
+      p_language_code: 'fi'
+    });
 
     if (error) {
       console.error('Reference search error:', error);
       return { type: 'reference', verses: [] };
     }
 
-    const verses = data?.map((verse: any) => ({
-      id: verse.id,
-      text: verse.text,
+    const verses = (data || []).map((verse: any) => ({
+      verse_id: verse.verse_id,
+      text_content: verse.text_content,
       verse_number: verse.verse_number,
-      chapter_number: verse.chapters.chapter_number,
-      book_name: verse.chapters.books.name,
-      book_id: verse.chapters.books.id,
-      chapter_id: verse.chapters.id
-    })) || [];
+      chapter_number: verse.chapter_number,
+      book_name: verse.book_name,
+      osis: verse.osis
+    }));
 
     return {
       type: 'reference',
@@ -191,53 +100,32 @@ export async function searchReference(reference: SearchResult['reference'], vers
   }
 }
 
-// Search for text using full-text search
-export async function searchText(searchTerm: string, versionId?: string): Promise<SearchResult> {
+// Search for text using RPC function
+export async function searchText(searchTerm: string, versionCode?: string): Promise<SearchResult> {
   if (!searchTerm.trim()) {
     return { type: 'text', verses: [] };
   }
 
   try {
-    let query = (supabase as any)
-      .schema('bible_schema')
-      .from('verses')
-      .select(`
-        id,
-        text,
-        verse_number,
-        chapters!inner(
-          chapter_number,
-          books!inner(
-            name,
-            id
-          ),
-          id
-        )
-      `)
-      .textSearch('text_search', searchTerm, { type: 'websearch' })
-      .limit(50);
-
-    // Filter by version if provided
-    if (versionId) {
-      query = query.eq('version_id', versionId);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await (supabase.rpc as any)('search_text', {
+      p_query: searchTerm,
+      p_version_code: versionCode || 'finstlk201',
+      p_limit: 50
+    });
 
     if (error) {
       console.error('Text search error:', error);
       return { type: 'text', verses: [] };
     }
 
-    const verses = data?.map((verse: any) => ({
-      id: verse.id,
-      text: verse.text,
+    const verses = (data || []).map((verse: any) => ({
+      verse_id: verse.verse_id,
+      text_content: verse.text_content,
       verse_number: verse.verse_number,
-      chapter_number: verse.chapters.chapter_number,
-      book_name: verse.chapters.books.name,
-      book_id: verse.chapters.books.id,
-      chapter_id: verse.chapters.id
-    })) || [];
+      chapter_number: verse.chapter_number,
+      book_name: verse.book_name,
+      osis: verse.osis
+    }));
 
     return {
       type: 'text',
@@ -250,7 +138,7 @@ export async function searchText(searchTerm: string, versionId?: string): Promis
 }
 
 // Main search function that determines search type
-export async function performSearch(query: string, versionId?: string): Promise<SearchResult> {
+export async function performSearch(query: string, versionCode?: string): Promise<SearchResult> {
   if (!query.trim()) {
     return { type: 'text', verses: [] };
   }
@@ -258,9 +146,9 @@ export async function performSearch(query: string, versionId?: string): Promise<
   // Try to parse as Bible reference first
   const reference = parseBibleReference(query);
   if (reference) {
-    return await searchReference(reference, versionId);
+    return await searchReference(reference, versionCode);
   }
 
   // Otherwise, perform text search
-  return await searchText(query, versionId);
+  return await searchText(query, versionCode);
 }

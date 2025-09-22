@@ -48,9 +48,9 @@ const SearchResults = ({ results, onClose, onNavigateToVerse, isLoading, version
             <div className="space-y-4">
               {results.verses.map((verse) => (
                 <Card 
-                  key={verse.id} 
+                  key={verse.verse_id} 
                   className="p-4 cursor-pointer hover:bg-accent transition-colors"
-                  onClick={() => onNavigateToVerse(verse.book_name, verse.chapter_number, verse.verse_number, verse.text)}
+                  onClick={() => onNavigateToVerse(verse.book_name, verse.chapter_number, verse.verse_number, verse.text_content)}
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
@@ -58,7 +58,7 @@ const SearchResults = ({ results, onClose, onNavigateToVerse, isLoading, version
                         {versionCode?.startsWith('fin') ? getFinnishBookName(verse.book_name) : verse.book_name} {verse.chapter_number}:{verse.verse_number}
                       </div>
                       <div className="text-base leading-relaxed">
-                        {verse.text}
+                        {verse.text_content}
                       </div>
                     </div>
                     <Button 
@@ -66,7 +66,7 @@ const SearchResults = ({ results, onClose, onNavigateToVerse, isLoading, version
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onNavigateToVerse(verse.book_name, verse.chapter_number, verse.verse_number, verse.text);
+                        onNavigateToVerse(verse.book_name, verse.chapter_number, verse.verse_number, verse.text_content);
                       }}
                     >
                       Siirry
