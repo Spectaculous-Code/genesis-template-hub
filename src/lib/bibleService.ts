@@ -124,70 +124,42 @@ export const getBibleBooks = async (versionCode: string = 'finstlk201'): Promise
   }
 };
 
-// Get chapter with verses
+// Get chapter with verses using optimized RPC function
 export const getChapterData = async (bookName: string, chapterNumber: number, versionCode: string = 'finstlk201'): Promise<ChapterWithVerses | null> => {
   try {
-    const supabaseQuery = (supabase as any);
-    
-    // Get the version first
-    const versionResponse = await supabaseQuery
-      .schema('bible_schema')
-      .from('bible_versions')
-      .select('id')
-      .eq('code', versionCode)
-      .single();
+    console.log('Fetching chapter data:', { bookName, chapterNumber, versionCode });
 
-    if (versionResponse.error || !versionResponse.data) {
-      console.error('Error fetching version:', versionResponse.error);
+    const { data, error } = await (supabase as any).rpc('get_chapter_by_ref', {
+      p_ref_book: bookName,
+      p_chapter: chapterNumber,
+      p_version_code: versionCode === 'finstlk201' ? null : versionCode,
+      p_language_code: 'fi'
+    });
+
+    if (error) {
+      console.error('Error fetching chapter:', error);
       return null;
     }
 
-    // Get the book for this specific version
-    const bookResponse = await supabaseQuery
-      .schema('bible_schema')
-      .from('books')
-      .select('id')
-      .eq('name', bookName)
-      .eq('version_id', versionResponse.data.id)
-      .single();
-
-    if (bookResponse.error || !bookResponse.data) {
-      console.error('Error fetching book:', bookResponse.error);
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.log('No chapter data found');
       return null;
     }
 
-    // Get the chapter
-    const chapterResponse = await supabaseQuery
-      .schema('bible_schema')
-      .from('chapters')
-      .select('id')
-      .eq('book_id', bookResponse.data.id)
-      .eq('chapter_number', chapterNumber)
-      .single();
+    console.log('Chapter data fetched:', data.length, 'verses');
 
-    if (chapterResponse.error || !chapterResponse.data) {
-      console.error('Error fetching chapter:', chapterResponse.error);
-      return null;
-    }
-
-    // Get verses for this chapter
-    const versesResponse = await supabaseQuery
-      .schema('bible_schema')
-      .from('verses')
-      .select('*')
-      .eq('chapter_id', chapterResponse.data.id)
-      .eq('version_id', versionResponse.data.id)
-      .order('verse_number');
-
-    if (versesResponse.error) {
-      console.error('Error fetching verses:', versesResponse.error);
-      return null;
-    }
+    // Transform the RPC response to our interface
+    const verses: BibleVerse[] = data.map((row: any) => ({
+      id: row.verse_id,
+      verse_number: row.verse_number,
+      text: row.text_content,
+      audio_url: undefined // Not provided by RPC function
+    }));
 
     return {
       book: bookName,
       chapter: chapterNumber,
-      verses: versesResponse.data || []
+      verses
     };
   } catch (error) {
     console.error('Error in getChapterData:', error);
