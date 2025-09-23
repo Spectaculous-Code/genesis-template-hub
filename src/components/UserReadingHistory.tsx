@@ -3,111 +3,104 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, BookOpen, Trash2, ExternalLink } from 'lucide-react';
+import { Loader2, BookOpen, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getFinnishBookName } from '@/lib/bookNameMapping';
 import { useToast } from '@/components/ui/use-toast';
 
-interface BookmarkItem {
+interface ReadingHistoryItem {
   id: string;
-  created_at: string;
-  verses: {
-    id: string;
-    verse_number: number;
-    text: string;
-    chapters: {
-      chapter_number: number;
-      books: {
-        name: string;
-      };
-    };
+  last_read_at: string;
+  chapter_number: number;
+  verse_number: number;
+  book: {
+    name: string;
+    name_localized?: string;
+  };
+  version: {
+    code: string;
+    name: string;
   };
 }
 
 const UserReadingHistory = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [history, setHistory] = useState<ReadingHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      fetchBookmarks();
+      fetchReadingHistory();
     }
   }, [user]);
 
-  const fetchBookmarks = async () => {
+  const fetchReadingHistory = async () => {
     if (!user) return;
 
     try {
       const { data, error } = await supabase
-        .from('bookmarks')
+        .from('user_reading_history')
         .select(`
           id,
-          created_at,
-          verses!inner(
-            id,
-            verse_number,
-            text,
-            chapters!inner(
-              chapter_number,
-              books!inner(name)
-            )
+          last_read_at,
+          chapter_number,
+          verse_number,
+          book:book_id (
+            name,
+            name_localized
+          ),
+          version:version_id (
+            code,
+            name
           )
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('last_read_at', { ascending: false })
+        .limit(50);
 
       if (error) {
-        console.error('Error fetching bookmarks:', error);
+        console.error('Error fetching reading history:', error);
       } else {
-        setBookmarks(data || []);
+        setHistory(data || []);
       }
     } catch (error) {
-      console.error('Error fetching bookmarks:', error);
+      console.error('Error fetching reading history:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteBookmark = async (bookmarkId: string) => {
+  const handleDeleteHistoryItem = async (historyId: string) => {
     if (!user) return;
 
     try {
       const { error } = await supabase
-        .from('bookmarks')
+        .from('user_reading_history')
         .delete()
-        .eq('id', bookmarkId)
+        .eq('id', historyId)
         .eq('user_id', user.id);
 
       if (error) {
         toast({
           title: "Virhe",
-          description: "Kirjanmerkin poistaminen epäonnistui",
+          description: "Lukuhistorian poistaminen epäonnistui",
           variant: "destructive",
         });
       } else {
-        setBookmarks(bookmarks.filter(b => b.id !== bookmarkId));
+        setHistory(history.filter(h => h.id !== historyId));
         toast({
-          title: "Kirjanmerkki poistettu",
-          description: "Kirjanmerkki on poistettu onnistuneesti",
+          title: "Kohde poistettu",
+          description: "Lukuhistorian kohde on poistettu onnistuneesti",
         });
       }
     } catch (error) {
       toast({
         title: "Virhe",
-        description: "Kirjanmerkin poistaminen epäonnistui",
+        description: "Lukuhistorian poistaminen epäonnistui",
         variant: "destructive",
       });
     }
-  };
-
-  const handleOpenVerse = (bookmark: BookmarkItem) => {
-    const bookName = bookmark.verses.chapters.books.name;
-    const chapterNumber = bookmark.verses.chapters.chapter_number;
-    const verseNumber = bookmark.verses.verse_number;
-    
-    window.location.href = `/?book=${encodeURIComponent(bookName)}&chapter=${chapterNumber}&verse=${verseNumber}`;
   };
 
   if (!user) {
@@ -117,7 +110,7 @@ const UserReadingHistory = () => {
           <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <CardTitle>Kirjaudu sisään</CardTitle>
           <CardDescription>
-            Kirjaudu sisään nähdäksesi kirjanmerkkisi
+            Kirjaudu sisään nähdäksesi lukuhistoriasi
           </CardDescription>
         </CardHeader>
       </Card>
@@ -129,20 +122,20 @@ const UserReadingHistory = () => {
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Ladataan kirjanmerkkejä...</span>
+          <span className="ml-2">Ladataan lukuhistoriaa...</span>
         </CardContent>
       </Card>
     );
   }
 
-  if (bookmarks.length === 0) {
+  if (history.length === 0) {
     return (
       <Card>
         <CardHeader className="text-center">
           <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <CardTitle>Ei kirjanmerkkejä</CardTitle>
+          <CardTitle>Ei lukuhistoriaa</CardTitle>
           <CardDescription>
-            Et ole vielä lisännyt yhtään kirjanmerkkiä
+            Ala lukemaan Raamattua lisätäksesi lukuhistoriaa
           </CardDescription>
         </CardHeader>
       </Card>
@@ -157,34 +150,30 @@ const UserReadingHistory = () => {
       </div>
       
       <div className="grid gap-4">
-        {bookmarks.map((bookmark) => (
-          <Card key={bookmark.id}>
+        {history.map((item) => (
+          <Card key={item.id}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="font-medium">
-                    {getFinnishBookName(bookmark.verses.chapters.books.name)} {bookmark.verses.chapters.chapter_number}:{bookmark.verses.verse_number}
+                    {getFinnishBookName(item.book.name)} {item.chapter_number} ({item.version.code}, {format(new Date(item.last_read_at), 'dd.MM.yyyy')})
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Lisätty {format(new Date(bookmark.created_at), 'dd.MM.yyyy')}
-                  </p>
-                  <p className="text-sm text-foreground/80 mt-2 line-clamp-2">
-                    {bookmark.verses.text}
-                  </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleOpenVerse(bookmark)}
+                    onClick={() => {
+                      const bookName = item.book.name;
+                      window.location.href = `/?book=${encodeURIComponent(bookName)}&chapter=${item.chapter_number}&verse=${item.verse_number}`;
+                    }}
                   >
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Avaa
+                    Avaa jae
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteBookmark(bookmark.id)}
+                    onClick={() => handleDeleteHistoryItem(item.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
