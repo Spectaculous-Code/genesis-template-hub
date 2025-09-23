@@ -255,7 +255,8 @@ const MainContent = ({
 
     setIsSearching(true);
     try {
-      const results = await performSearch(query, selectedVersion);
+      const versionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
+      const results = await performSearch(query, versionCode);
       setSearchResults(results);
     } catch (error) {
       console.error('Search error:', error);
