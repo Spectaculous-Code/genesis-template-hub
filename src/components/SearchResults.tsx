@@ -16,7 +16,7 @@ const SearchResults = ({ results, onClose, onNavigateToVerse, isLoading, version
   if (!results && !isLoading) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20">
+    <div className="fixed inset-0 bg-black/50 z-[70] flex items-start justify-center pt-20">
       <Card className="w-full max-w-4xl max-h-[80vh] overflow-hidden mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
