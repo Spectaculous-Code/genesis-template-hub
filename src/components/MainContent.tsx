@@ -153,7 +153,7 @@ const MainContent = ({
     try {
       const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
       
-      // Use the chapter RPC function to get the first verse
+      // Use the chapter RPC function to get the first verse (then map OSIS -> public.verses.id)
       const { data: chapterData, error: chapterError } = await (supabase as any)
         .rpc('get_chapter_by_ref', {
           p_ref_book: selectedBook,
@@ -162,19 +162,35 @@ const MainContent = ({
           p_language_code: 'fi'
         });
 
-      if (chapterError || !chapterData || !Array.isArray(chapterData) || chapterData.length === 0) {
+      if (chapterError || !Array.isArray(chapterData) || chapterData.length === 0) {
         throw new Error('Chapter not found');
       }
 
-      // Get the first verse from the chapter
-      const firstVerse = chapterData[0];
+      // Find verse 1 (fallback: smallest verse_number)
+      const firstRow = chapterData.find((r: any) => r.verse_number === 1)
+        ?? [...chapterData].sort((a: any, b: any) => a.verse_number - b.verse_number)[0];
+
+      const osis = firstRow?.osis ?? `${firstRow.book_code}.${firstRow.chapter_number}.${firstRow.verse_number}`;
+
+      // Map OSIS to the canonical public.verses.id
+      const { data: mapData, error: mapError } = await (supabase as any)
+        .rpc('map_osis_to_verse_ids', {
+          p_version_code: currentVersionCode,
+          p_osis: [osis],
+        });
+
+      if (mapError || !Array.isArray(mapData) || mapData.length === 0 || !mapData[0]?.verse_id) {
+        throw new Error('Verse mapping failed');
+      }
+
+      const mappedVerseId = mapData[0].verse_id as string;
         
       // Save bookmark
       const { error } = await supabase
         .from('bookmarks')
         .insert({
           user_id: user.id,
-          verse_id: firstVerse.verse_id
+          verse_id: mappedVerseId
         });
 
       if (error) {
