@@ -139,12 +139,12 @@ const MainContent = ({
     }
   };
 
-  // Save current chapter as last read position with toast notification
-  const saveAsLastRead = async () => {
+  // Save current verse as bookmark
+  const saveAsBookmark = async () => {
     if (!user || !selectedBook) {
       toast({
         title: "Kirjautuminen vaaditaan",
-        description: "Kirjaudu sisään tallentaaksesi lukuasennon",
+        description: "Kirjaudu sisään tallentaaksesi kirjanmerkin",
         variant: "destructive"
       });
       return;
@@ -152,20 +152,72 @@ const MainContent = ({
 
     try {
       const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
-      await saveReadingPositionToDB(selectedBook, selectedChapter, currentVersionCode);
+      
+      // Get the verse data using direct table queries
+      const { data: versionData } = await supabase
+        .from('bible_versions')
+        .select('id')
+        .eq('code', currentVersionCode)
+        .single();
+
+      if (!versionData) {
+        throw new Error('Version not found');
+      }
+
+      const { data: bookData } = await supabase
+        .from('books')
+        .select('id')
+        .eq('name', selectedBook)
+        .eq('version_id', versionData.id)
+        .single();
+
+      if (!bookData) {
+        throw new Error('Book not found');
+      }
+
+      const { data: chapterData } = await supabase
+        .from('chapters')
+        .select('id')
+        .eq('book_id', bookData.id)
+        .eq('chapter_number', selectedChapter)
+        .single();
+
+      if (!chapterData) {
+        throw new Error('Chapter not found');
+      }
+
+      const { data: verseData } = await supabase
+        .from('verses')
+        .select('id')
+        .eq('chapter_id', chapterData.id)
+        .eq('verse_number', 1)
+        .single();
+
+      if (!verseData) {
+        throw new Error('Verse not found');
+      }
+        
+      // Save bookmark
+      const { error } = await supabase
+        .from('bookmarks')
+        .insert({
+          user_id: user.id,
+          verse_id: verseData.id
+        });
+
+      if (error) {
+        throw error;
+      }
       
       toast({
-        title: "Lukuasento tallennettu",
-        description: `${getFinnishBookName(selectedBook)} ${selectedChapter} - Kirjanmerkki`,
+        title: "Kirjanmerkki tallennettu",
+        description: `${getFinnishBookName(selectedBook)} ${selectedChapter}:1`,
       });
-
-      // Refresh latest position
-      refetchLatestPosition();
     } catch (error) {
-      console.error('Error saving reading position:', error);
+      console.error('Error saving bookmark:', error);
       toast({
         title: "Virhe",
-        description: "Lukuasennon tallennus epäonnistui",
+        description: "Kirjanmerkin tallennus epäonnistui",
         variant: "destructive"
       });
     }
@@ -405,7 +457,7 @@ const MainContent = ({
               <Button variant="outline" size="sm">
                 <Volume2 className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={saveAsLastRead}>
+              <Button variant="outline" size="sm" onClick={saveAsBookmark}>
                 <Bookmark className="h-4 w-4" />
               </Button>
             </div>
