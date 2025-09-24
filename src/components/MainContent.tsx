@@ -139,7 +139,7 @@ const MainContent = ({
     }
   };
 
-  // Save current verse as bookmark
+  // Save current chapter as bookmark
   const saveAsBookmark = async () => {
     if (!user || !selectedBook) {
       toast({
@@ -153,56 +153,28 @@ const MainContent = ({
     try {
       const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
       
-      // Get the verse data using direct table queries
-      const { data: versionData } = await supabase
-        .from('bible_versions')
-        .select('id')
-        .eq('code', currentVersionCode)
-        .single();
+      // Use the chapter RPC function to get the first verse
+      const { data: chapterData, error: chapterError } = await (supabase as any)
+        .rpc('get_chapter_by_ref', {
+          p_ref_book: selectedBook,
+          p_chapter: selectedChapter,
+          p_version_code: currentVersionCode,
+          p_language_code: 'fi'
+        });
 
-      if (!versionData) {
-        throw new Error('Version not found');
-      }
-
-      const { data: bookData } = await supabase
-        .from('books')
-        .select('id')
-        .eq('name', selectedBook)
-        .eq('version_id', versionData.id)
-        .single();
-
-      if (!bookData) {
-        throw new Error('Book not found');
-      }
-
-      const { data: chapterData } = await supabase
-        .from('chapters')
-        .select('id')
-        .eq('book_id', bookData.id)
-        .eq('chapter_number', selectedChapter)
-        .single();
-
-      if (!chapterData) {
+      if (chapterError || !chapterData || !Array.isArray(chapterData) || chapterData.length === 0) {
         throw new Error('Chapter not found');
       }
 
-      const { data: verseData } = await supabase
-        .from('verses')
-        .select('id')
-        .eq('chapter_id', chapterData.id)
-        .eq('verse_number', 1)
-        .single();
-
-      if (!verseData) {
-        throw new Error('Verse not found');
-      }
+      // Get the first verse from the chapter
+      const firstVerse = chapterData[0];
         
       // Save bookmark
       const { error } = await supabase
         .from('bookmarks')
         .insert({
           user_id: user.id,
-          verse_id: verseData.id
+          verse_id: firstVerse.verse_id
         });
 
       if (error) {
