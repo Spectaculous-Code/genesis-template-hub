@@ -178,16 +178,36 @@ const MainContent = ({
       const firstVerse = chapterData[0];
       const osis = `${firstVerse.book_code}.${selectedChapter}.1`;
 
+      // Get version ID first
+      const { data: versionData } = await (supabase as any)
+        .schema('bible_schema')
+        .from('bible_versions')
+        .select('id')
+        .eq('code', currentVersionCode)
+        .single();
+
+      if (!versionData) {
+        throw new Error('Version not found');
+      }
+
+      // Get book_id with version_id
+      const { data: bookData, error: bookError } = await supabase
+        .from('books')
+        .select('id')
+        .eq('name', selectedBook)
+        .eq('version_id', versionData.id)
+        .single();
+
+      if (bookError || !bookData) {
+        throw new Error('Book not found');
+      }
+
       // Get chapter_id from chapters table
       const { data: chapterRecord, error: chapterRecordError } = await supabase
         .from('chapters')
         .select('id')
         .eq('chapter_number', selectedChapter)
-        .eq('book_id', (await supabase
-          .from('books')
-          .select('id')
-          .eq('name', selectedBook)
-          .single()).data?.id)
+        .eq('book_id', bookData.id)
         .single();
 
       if (chapterRecordError || !chapterRecord) {
