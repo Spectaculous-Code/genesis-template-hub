@@ -165,24 +165,51 @@ export type Database = {
       }
       bookmarks: {
         Row: {
+          chapter_id: string | null
           created_at: string
           id: string
+          osis: string | null
           user_id: string | null
-          verse_id: string
+          verse_id: string | null
         }
         Insert: {
+          chapter_id?: string | null
           created_at?: string
           id?: string
+          osis?: string | null
           user_id?: string | null
-          verse_id: string
+          verse_id?: string | null
         }
         Update: {
+          chapter_id?: string | null
           created_at?: string
           id?: string
+          osis?: string | null
           user_id?: string | null
-          verse_id?: string
+          verse_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "bookmarks_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_verses_mv"
+            referencedColumns: ["chapter_id"]
+          },
+          {
+            foreignKeyName: "bookmarks_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_verses_user_v"
+            referencedColumns: ["chapter_id"]
+          },
+          {
+            foreignKeyName: "bookmarks_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookmarks_verse_id_fkey"
             columns: ["verse_id"]
@@ -215,38 +242,50 @@ export type Database = {
       }
       books: {
         Row: {
+          abbrev_norm: string | null
           book_order: number
           chapters_count: number
           code: string | null
+          code_norm: string | null
           created_at: string
           id: string
           name: string
           name_abbreviation: string | null
+          name_loc_norm: string | null
           name_localized: string | null
+          name_norm: string | null
           testament: Database["public"]["Enums"]["testament_t"]
           version_id: string | null
         }
         Insert: {
+          abbrev_norm?: string | null
           book_order: number
           chapters_count: number
           code?: string | null
+          code_norm?: string | null
           created_at?: string
           id?: string
           name: string
           name_abbreviation?: string | null
+          name_loc_norm?: string | null
           name_localized?: string | null
+          name_norm?: string | null
           testament: Database["public"]["Enums"]["testament_t"]
           version_id?: string | null
         }
         Update: {
+          abbrev_norm?: string | null
           book_order?: number
           chapters_count?: number
           code?: string | null
+          code_norm?: string | null
           created_at?: string
           id?: string
           name?: string
           name_abbreviation?: string | null
+          name_loc_norm?: string | null
           name_localized?: string | null
+          name_norm?: string | null
           testament?: Database["public"]["Enums"]["testament_t"]
           version_id?: string | null
         }
@@ -1070,12 +1109,63 @@ export type Database = {
         Args: { p_verse_ids: string[] }
         Returns: number
       }
+      get_chapter_by_ref: {
+        Args: {
+          p_chapter: number
+          p_language_code?: string
+          p_ref_book: string
+          p_version_code?: string
+        }
+        Returns: {
+          book_code: string
+          book_name: string
+          chapter_number: number
+          osis: string
+          text_content: string
+          verse_id: string
+          verse_number: number
+          version_code: string
+        }[]
+      }
       get_kjv_verse_with_strongs: {
         Args: { p_osis: string }
         Returns: {
           osis: string
           plain_text: string
           tagged_text: string
+        }[]
+      }
+      get_verse_by_ref: {
+        Args: {
+          p_chapter: number
+          p_language_code?: string
+          p_ref_book: string
+          p_verse: number
+          p_version_code?: string
+        }
+        Returns: {
+          osis: string
+          text_content: string
+          verse_id: string
+        }[]
+      }
+      get_verses_by_ref: {
+        Args: {
+          p_chapter: number
+          p_language_code?: string
+          p_ref_book: string
+          p_verses?: number[]
+          p_version_code?: string
+        }
+        Returns: {
+          book_code: string
+          book_name: string
+          chapter_number: number
+          osis: string
+          text_content: string
+          verse_id: string
+          verse_number: number
+          version_code: string
         }[]
       }
       map_osis_to_verse_ids: {
@@ -1096,6 +1186,18 @@ export type Database = {
       osis_head_for_book: {
         Args: { p_book_id: string }
         Returns: string
+      }
+      search_text: {
+        Args: { p_limit?: number; p_query: string; p_version_code?: string }
+        Returns: {
+          book_name: string
+          chapter_number: number
+          osis: string
+          text_content: string
+          verse_id: string
+          verse_number: number
+          version_code: string
+        }[]
       }
     }
     Enums: {

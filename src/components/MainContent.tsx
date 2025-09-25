@@ -151,9 +151,8 @@ const MainContent = ({
     }
 
     try {
-      // Resolve version code robustly: prefer selected, else first active; if none, bail
-      const selectedVersionObj = bibleVersions.find(v => v.id === selectedVersion) ?? bibleVersions[0];
-      const currentVersionCode = selectedVersionObj?.code;
+      // Resolve version code
+      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code;
       if (!currentVersionCode) {
         toast({
           title: "Versio puuttuu",
@@ -162,8 +161,8 @@ const MainContent = ({
         });
         return;
       }
-      
-      // Use the chapter RPC function to get the first verse (then map OSIS -> public.verses.id)
+
+      // Get chapter info to get chapter_id and construct OSIS
       const { data: chapterData, error: chapterError } = await (supabase as any)
         .rpc('get_chapter_by_ref', {
           p_ref_book: selectedBook,
@@ -176,39 +175,50 @@ const MainContent = ({
         throw new Error('Chapter not found');
       }
 
-      // Find verse 1 (fallback: smallest verse_number)
-      const firstRow = chapterData.find((r: any) => r.verse_number === 1)
-        ?? [...chapterData].sort((a: any, b: any) => a.verse_number - b.verse_number)[0];
+      const firstVerse = chapterData[0];
+      const osis = `${firstVerse.book_code}.${selectedChapter}.1`;
 
-      const osis = firstRow?.osis ?? `${firstRow.book_code}.${firstRow.chapter_number}.${firstRow.verse_number}`;
+      // Get chapter_id from chapters table
+      const { data: chapterRecord, error: chapterRecordError } = await supabase
+        .from('chapters')
+        .select('id')
+        .eq('chapter_number', selectedChapter)
+        .eq('book_id', (await supabase
+          .from('books')
+          .select('id')
+          .eq('name', selectedBook)
+          .single()).data?.id)
+        .single();
 
-      // Try to map OSIS to the canonical public.verses.id for the selected version
-      console.log('Bookmark debug', { currentVersionCode, osis, firstRow });
-      const { data: mapData, error: mapError } = await (supabase as any)
-        .rpc('map_osis_to_verse_ids', {
-          p_version_code: currentVersionCode,
-          p_osis: [osis],
+      if (chapterRecordError || !chapterRecord) {
+        throw new Error('Chapter record not found');
+      }
+
+      // Check for existing bookmark to avoid duplicates
+      const { data: existingBookmark } = await supabase
+        .from('bookmarks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('chapter_id', chapterRecord.id)
+        .maybeSingle();
+
+      if (existingBookmark) {
+        toast({
+          title: "Kirjanmerkki on jo olemassa",
+          description: `${getFinnishBookName(selectedBook)} ${selectedChapter}`,
+          variant: "default"
         });
-
-      let verseId: string | null = null;
-      if (!mapError && Array.isArray(mapData) && mapData.length > 0 && mapData[0]?.verse_id) {
-        verseId = mapData[0].verse_id as string;
-      } else if (firstRow?.verse_id) {
-        // Fallback: use verse_id returned by RPC if mapping failed
-        console.warn('map_osis_to_verse_ids failed, falling back to RPC verse_id', { mapError, mapData });
-        verseId = firstRow.verse_id as string;
+        return;
       }
 
-      if (!verseId) {
-        throw new Error('Verse id not resolved');
-      }
-        
-      // Save bookmark
+      // Save bookmark with chapter_id and osis
       const { error } = await supabase
         .from('bookmarks')
         .insert({
           user_id: user.id,
-          verse_id: verseId
+          chapter_id: chapterRecord.id,
+          osis: osis,
+          verse_id: null // Save at chapter level by default
         });
 
       if (error) {
@@ -217,7 +227,7 @@ const MainContent = ({
       
       toast({
         title: "Kirjanmerkki tallennettu",
-        description: `${getFinnishBookName(selectedBook)} ${selectedChapter}:1`,
+        description: `${getFinnishBookName(selectedBook)} ${selectedChapter}`,
       });
     } catch (error) {
       console.error('Error saving bookmark:', error);
