@@ -151,7 +151,17 @@ const MainContent = ({
     }
 
     try {
-      const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
+      // Resolve version code robustly: prefer selected, else first active; if none, bail
+      const selectedVersionObj = bibleVersions.find(v => v.id === selectedVersion) ?? bibleVersions[0];
+      const currentVersionCode = selectedVersionObj?.code;
+      if (!currentVersionCode) {
+        toast({
+          title: "Versio puuttuu",
+          description: "Valitse Raamatun versio ennen kirjanmerkin tallennusta.",
+          variant: "destructive"
+        });
+        return;
+      }
       
       // Use the chapter RPC function to get the first verse (then map OSIS -> public.verses.id)
       const { data: chapterData, error: chapterError } = await (supabase as any)
@@ -172,25 +182,33 @@ const MainContent = ({
 
       const osis = firstRow?.osis ?? `${firstRow.book_code}.${firstRow.chapter_number}.${firstRow.verse_number}`;
 
-      // Map OSIS to the canonical public.verses.id
+      // Try to map OSIS to the canonical public.verses.id for the selected version
+      console.log('Bookmark debug', { currentVersionCode, osis, firstRow });
       const { data: mapData, error: mapError } = await (supabase as any)
         .rpc('map_osis_to_verse_ids', {
           p_version_code: currentVersionCode,
           p_osis: [osis],
         });
 
-      if (mapError || !Array.isArray(mapData) || mapData.length === 0 || !mapData[0]?.verse_id) {
-        throw new Error('Verse mapping failed');
+      let verseId: string | null = null;
+      if (!mapError && Array.isArray(mapData) && mapData.length > 0 && mapData[0]?.verse_id) {
+        verseId = mapData[0].verse_id as string;
+      } else if (firstRow?.verse_id) {
+        // Fallback: use verse_id returned by RPC if mapping failed
+        console.warn('map_osis_to_verse_ids failed, falling back to RPC verse_id', { mapError, mapData });
+        verseId = firstRow.verse_id as string;
       }
 
-      const mappedVerseId = mapData[0].verse_id as string;
+      if (!verseId) {
+        throw new Error('Verse id not resolved');
+      }
         
       // Save bookmark
       const { error } = await supabase
         .from('bookmarks')
         .insert({
           user_id: user.id,
-          verse_id: mappedVerseId
+          verse_id: verseId
         });
 
       if (error) {
