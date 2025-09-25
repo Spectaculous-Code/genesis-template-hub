@@ -99,7 +99,8 @@ const MainContent = ({
 
       if (versionData) {
         // Then get the book data
-        const { data: bookData } = await supabase
+        const { data: bookData } = await (supabase as any)
+          .schema('bible_schema')
           .from('books')
           .select('id')
           .eq('name', bookName)
@@ -108,7 +109,8 @@ const MainContent = ({
 
         if (bookData) {
           // Get the chapter data  
-          const { data: chapterData } = await supabase
+          const { data: chapterData } = await (supabase as any)
+            .schema('bible_schema')
             .from('chapters')
             .select('id')
             .eq('book_id', bookData.id)
@@ -191,7 +193,8 @@ const MainContent = ({
       }
 
       // Get book_id with version_id
-      const { data: bookData, error: bookError } = await supabase
+      const { data: bookData, error: bookError } = await (supabase as any)
+        .schema('bible_schema')
         .from('books')
         .select('id')
         .eq('name', selectedBook)
