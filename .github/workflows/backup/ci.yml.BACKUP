@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  typecheck_lint_test:
+    name: TypeScript · Lint · Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      # TypeScript (works even if you don’t have a "typecheck" script)
+      - name: Typecheck
+        run: npm run typecheck --if-present || npx tsc --noEmit
+
+      # Lint + format check (Biome preferred; falls back to ESLint/Prettier if present)
+      - name: Lint
+        run: |
+          if npm run -s biome --help > /dev/null 2>&1 || npx -y @biomejs/biome --version > /dev/null 2>&1; then
+            npx @biomejs/biome lint .
+            npx @biomejs/biome format . --check
+          else
+            npm run lint --if-present
+            npm run format:check --if-present
+          fi
+
+      # Unit tests (Vitest/Jest supported)
+      - name: Test
+        run: npm test --if-present -- --run
+
+  openapi_types:
+    name: Generate OpenAPI TS types
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && secrets.SUPABASE_PROJECT_ID != '' && secrets.SUPABASE_ACCESS_TOKEN != '' }}
+    //OJ if: ${{ github.event_name == 'pull_request' && hashFiles('openapi.yaml', 'openapi.yml') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Generate types
+        run: |
+          npx -y openapi-typescript ./openapi.yaml -o src/lib/openapi.types.ts || \
+          npx -y openapi-typescript ./openapi.yml -o src/lib/openapi.types.ts
+      - name: Typecheck with generated types
+        run: npx tsc --noEmit
+
+  supabase_types:
+    name: Supabase DB types
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && env.SUPABASE_PROJECT_ID != '' && env.SUPABASE_ACCESS_TOKEN != '' }}
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Install Supabase CLI
+        run: npm i -g supabase
+      - name: Generate DB types
+        run: supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID" > src/lib/database.types.ts
+      - name: Typecheck with DB types
+        run: npx tsc --noEmit
+
+  ai_pr_review:
+    name: AI PR Review
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && vars.AI_REVIEW_ENABLED == 'true' && secrets.OPENAI_API_KEY != '' }}
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Compute diff
+        id: diff
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git fetch origin ${{ github.head_ref }} --depth=1
+          git checkout ${{ github.head_ref }}
+          echo '```diff' > /tmp/diff.txt
+          git diff --unified=0 origin/${{ github.base_ref }}...origin/${{ github.head_ref }} >> /tmp/diff.txt || true
+          echo '```' >> /tmp/diff.txt
+          # Truncate to ~100k chars to stay under token and comment limits
+          python - <<'PY'
+import os, sys, textwrap
+p = "/tmp/diff.txt"
+data = open(p,'r',encoding='utf-8').read()
+lim = 100000
+if len(data) > lim:
+    data = data[:lim] + "\n\n...[diff truncated]...\n"
+open(p,'w',encoding='utf-8').write(data)
+PY
+
+      - name: Prepare prompt
+        run: |
+          echo "You are an expert TypeScript/React reviewer. Follow the repository rules below." > /tmp/prompt.txt
+          echo "" >> /tmp/prompt.txt
+          if [ -f ".ai/rules.md" ]; then
+            cat .ai/rules.md >> /tmp/prompt.txt
+          else
+            echo "- Enforce strict TS, a11y, shadcn patterns, and RLS safety." >> /tmp/prompt.txt
+          fi
+
+      - name: Run AI review and post comment
+        run: |
+          node - <<'NODE'
+const fs = require('fs');
+
+const system = fs.readFileSync('/tmp/prompt.txt','utf8');
+const diff = fs.readFileSync('/tmp/diff.txt','utf8');
+
+async function main(){
+  const body = JSON.stringify({
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: "Review this PR diff. Point out TypeScript errors, a11y issues, shadcn anti-patterns, broken react-query usage, and potential RLS problems. Provide actionable code suggestions.\n\n" + diff }
+    ],
+    temperature: 0.2
+  });
+
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error("OpenAI error: " + txt);
+  }
+
+  const json = await resp.json();
+  const review = json.choices?.[0]?.message?.content || "No review content.";
+
+  // Post a PR comment
+  const prNumber = process.env.GITHUB_EVENT_PATH 
+    ? JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')).pull_request?.number
+    : '';
+  //OJ const prNumber = process.env.GITHUB_REF?.split('/').pop() || process.env.PR_NUMBER || '';
+  const { execSync } = require('child_process');
+  execSync(`gh pr comment ${prNumber} --body-file -`, { input: review, stdio: ['pipe','inherit','inherit'] });
+}
+
+main().catch(err => {
+  console.error(err);
+  process.exit(0); // don't fail the build due to review issues
+});
+NODE

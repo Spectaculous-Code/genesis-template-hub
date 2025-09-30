@@ -1,0 +1,157 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Run weekly on Monday at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  dependency_review:
+    name: Dependency Security Check
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Comprehensive NPM Audit
+        run: |
+          echo "## NPM Audit Report" > /tmp/audit.txt
+          echo "" >> /tmp/audit.txt
+          
+          # Run audit and capture output
+          npm audit --json > /tmp/audit.json || true
+          
+          # Parse and display results
+          node - <<'NODE'
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('/tmp/audit.json', 'utf8'));
+          
+          const vulns = data.metadata?.vulnerabilities || {};
+          const total = Object.values(vulns).reduce((a, b) => a + b, 0);
+          
+          console.log(`\n📊 Vulnerability Summary:`);
+          console.log(`  Critical: ${vulns.critical || 0}`);
+          console.log(`  High:     ${vulns.high || 0}`);
+          console.log(`  Moderate: ${vulns.moderate || 0}`);
+          console.log(`  Low:      ${vulns.low || 0}`);
+          console.log(`  Total:    ${total}\n`);
+          
+          if (vulns.critical > 0 || vulns.high > 0) {
+            console.log('❌ High or Critical vulnerabilities found!');
+            process.exit(1);
+          } else {
+            console.log('✅ No high or critical vulnerabilities');
+          }
+          NODE
+
+      - name: Check outdated packages
+        run: |
+          echo "📦 Checking for outdated packages..."
+          npm outdated || true
+
+  semgrep:
+    name: Semgrep SAST Scan
+    runs-on: ubuntu-latest
+    # Only run if Semgrep is configured
+    if: ${{ secrets.SEMGREP_APP_TOKEN != '' }}
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep scan
+        uses: returntocorp/semgrep-action@fcd5ab7459e8d91cb1777481980d1b18b4fc6735
+        with:
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+          publishDeployment: ${{ secrets.SEMGREP_DEPLOYMENT_ID }}
+          generateSarif: "1"
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+        if: always()
+
+  secret_scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [codeql, dependency_review]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🛡️ Security Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Workflow run: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "Triggered by: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "- CodeQL: ${{ needs.codeql.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependencies: ${{ needs.dependency_review.result }}" >> $GITHUB_STEP_SUMMARY

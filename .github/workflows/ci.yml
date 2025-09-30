@@ -1,0 +1,249 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  typecheck_lint_test:
+    name: TypeScript · Lint · Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run typecheck --if-present || npx tsc --noEmit
+
+      - name: Lint & Format
+        run: |
+          if npm run -s biome --help > /dev/null 2>&1 || npx -y @biomejs/biome --version > /dev/null 2>&1; then
+            npx @biomejs/biome lint .
+            npx @biomejs/biome format . --check
+          else
+            npm run lint --if-present
+            npm run format:check --if-present
+          fi
+
+      - name: Unit Tests
+        run: npm test --if-present -- --run
+
+  npm_security:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: NPM Audit (High & Critical)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for known vulnerabilities
+        run: |
+          # Fail if critical vulnerabilities found
+          if npm audit --audit-level=critical --json | jq -e '.metadata.vulnerabilities.critical > 0' > /dev/null 2>&1; then
+            echo "❌ Critical vulnerabilities found!"
+            npm audit --audit-level=critical
+            exit 1
+          else
+            echo "✅ No critical vulnerabilities"
+          fi
+
+  openapi_types:
+    name: OpenAPI Types
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && hashFiles('openapi.yaml', 'openapi.yml') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with: 
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate OpenAPI types
+        run: |
+          npx -y openapi-typescript ./openapi.yaml -o src/lib/openapi.types.ts || \
+          npx -y openapi-typescript ./openapi.yml -o src/lib/openapi.types.ts
+
+      - name: Verify types compile
+        run: npx tsc --noEmit
+
+  supabase_types:
+    name: Supabase Types
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && secrets.SUPABASE_PROJECT_ID != '' && secrets.SUPABASE_ACCESS_TOKEN != '' }}
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with: 
+          node-version: 20
+
+      - name: Install Supabase CLI
+        run: npm i -g supabase
+
+      - name: Generate database types
+        run: supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID" > src/lib/database.types.ts
+
+      - name: Verify types compile
+        run: npx tsc --noEmit
+
+  ai_pr_review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && vars.AI_REVIEW_ENABLED == 'true' && secrets.OPENAI_API_KEY != '' }}
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh -y
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git fetch origin ${{ github.head_ref }} --depth=1
+          
+          if ! git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }} --quiet; then
+            echo '```diff' > /tmp/diff.txt
+            git diff --unified=3 origin/${{ github.base_ref }}...origin/${{ github.head_ref }} >> /tmp/diff.txt
+            echo '```' >> /tmp/diff.txt
+            
+            # Truncate to 100k chars
+            python3 - <<'PY'
+import sys
+p = "/tmp/diff.txt"
+data = open(p, 'r', encoding='utf-8').read()
+lim = 100000
+if len(data) > lim:
+    data = data[:lim] + "\n\n...[diff truncated]...\n"
+open(p, 'w', encoding='utf-8').write(data)
+PY
+            echo "has_diff=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_diff=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Prepare review prompt
+        if: steps.diff.outputs.has_diff == 'true'
+        run: |
+          echo "You are an expert TypeScript/React code reviewer." > /tmp/prompt.txt
+          echo "" >> /tmp/prompt.txt
+          if [ -f ".ai/rules.md" ]; then
+            cat .ai/rules.md >> /tmp/prompt.txt
+          else
+            cat << 'EOF' >> /tmp/prompt.txt
+Review this code for:
+- TypeScript errors and type safety issues
+- React anti-patterns and hooks violations
+- Accessibility (a11y) issues
+- shadcn/ui component usage
+- Supabase RLS policy violations
+- Security vulnerabilities
+- Performance concerns
+
+Provide specific, actionable suggestions with code examples.
+EOF
+          fi
+
+      - name: Run AI review
+        if: steps.diff.outputs.has_diff == 'true'
+        run: |
+          node - <<'NODE'
+const fs = require('fs');
+
+const system = fs.readFileSync('/tmp/prompt.txt', 'utf8');
+const diff = fs.readFileSync('/tmp/diff.txt', 'utf8');
+
+async function main() {
+  const body = JSON.stringify({
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: `Review this PR diff:\n\n${diff}` }
+    ],
+    temperature: 0.2
+  });
+
+  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`OpenAI error: ${txt}`);
+  }
+
+  const json = await resp.json();
+  const review = json.choices?.[0]?.message?.content || "No review generated.";
+
+  // Get PR number
+  const eventData = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+  const prNumber = eventData.pull_request?.number;
+  
+  if (!prNumber) {
+    console.log("⚠️ No PR number found, skipping comment");
+    return;
+  }
+
+  // Post comment
+  const { execSync } = require('child_process');
+  const reviewWithHeader = `## 🤖 AI Code Review\n\n${review}`;
+  
+  execSync(`gh pr comment ${prNumber} --body-file -`, { 
+    input: reviewWithHeader,
+    stdio: ['pipe', 'inherit', 'inherit']
+  });
+  
+  console.log("✅ AI review posted successfully");
+}
+
+main().catch(err => {
+  console.error("❌ AI review failed:", err.message);
+  process.exit(0); // Don't fail the build
+});
+NODE
