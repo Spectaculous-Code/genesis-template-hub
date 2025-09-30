@@ -287,7 +287,7 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
     
     return words.map((word, index) => {
       // Look for words with one or more Strong's numbers: word<G123><G456>
-      const strongsMatch = word.match(/^(.+?)(<[GH].+?>)+$/);
+      const strongsMatch = word.match(/^([^\<]+)((<[GH]\d+>)+)$/);
       if (strongsMatch) {
         const [, wordText] = strongsMatch;
         // Extract all Strong's numbers from the word
