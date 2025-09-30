@@ -57,7 +57,10 @@ jobs:
       - name: NPM Audit (High & Critical)
         run: npm audit --audit-level=high
         continue-on-error: true
-
+    
+      - name: Ensure jq is installed
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
       - name: Check for known vulnerabilities
         run: |
           if npm audit --audit-level=critical --json | jq -e '.metadata.vulnerabilities.critical > 0' > /dev/null 2>&1; then
@@ -163,6 +166,7 @@ jobs:
         if: steps.check_ai.outputs.enabled == 'true'
         run: sudo apt-get install gh -y
 
+
       - name: Get PR diff
         if: steps.check_ai.outputs.enabled == 'true'
         id: diff
@@ -173,21 +177,9 @@ jobs:
           
           if ! git diff origin/${{ github.base_ref }}...origin/${{ github.head_ref }} --quiet; then
             echo '```diff' > /tmp/diff.txt
-            git diff --unified=3 origin/${{ github.base_ref }}...origin/${{ github.head_ref }} >> /tmp/diff.txt
-            echo '```' >> /tmp/diff.txt
-
-            # Truncate diff to 100k chars (keeps UTF-8)
-            python3 - <<'PY'
-import io
-p = "/tmp/diff.txt"
-lim = 100_000
-with open(p, "r", encoding="utf-8") as f:
-    data = f.read()
-if len(data) > lim:
-    data = data[:lim] + "\n\n...[diff truncated]...\n"
-with open(p, "w", encoding="utf-8") as f:
-    f.write(data)
-PY
+            git diff --unified=3 origin/${{ github.base_ref }}...origin/${{ github.head_ref }} \
+              | head -c 100000 >> /tmp/diff.txt
+            echo -e "\n\n...[diff truncated]...\n```" >> /tmp/diff.txt
             echo "has_diff=true" >> $GITHUB_OUTPUT
           else
             echo "has_diff=false" >> $GITHUB_OUTPUT
