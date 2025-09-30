@@ -1,0 +1,12 @@
+# .github/workflows/security.yml (THOROUGH - main branch + nightly)
+name: Security
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * *'
+jobs:
+  codeql:
+    # Deep SAST analysis
+  trivy:
+    # Container + dependency scan

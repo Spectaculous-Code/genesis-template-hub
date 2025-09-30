@@ -1,0 +1,35 @@
+# .github/workflows/ci.yml (FAST - every PR)
+name: CI
+on: [pull_request, push]
+jobs:
+  quality:
+    # TypeScript, lint, test, types generation
+  npm_audit:
+    # Quick dependency check
+  ai_review:
+    # AI PR review (optional)
+
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  typecheck_lint_test:
+    # Your existing job
+    
+  openapi_types:
+    # Your existing job
+    
+  supabase_types:
+    # Your existing job
+    
+  npm_audit:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm audit --audit-level=high
