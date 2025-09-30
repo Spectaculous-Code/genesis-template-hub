@@ -176,15 +176,16 @@ jobs:
             echo '```' >> /tmp/diff.txt
             
             # Truncate diff to 100k chars
-            python3 <<'EOF'
+
+            python3 -c '
 import sys
 p = "/tmp/diff.txt"
-data = open(p, 'r', encoding='utf-8').read()
+data = open(p, "r", encoding="utf-8").read()
 lim = 100000
 if len(data) > lim:
     data = data[:lim] + "\n\n...[diff truncated]...\n"
-open(p, 'w', encoding='utf-8').write(data)
-EOF
+open(p, "w", encoding="utf-8").write(data)
+'
             echo "has_diff=true" >> $GITHUB_OUTPUT
           else
             echo "has_diff=false" >> $GITHUB_OUTPUT
