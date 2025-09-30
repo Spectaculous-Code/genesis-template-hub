@@ -166,6 +166,7 @@ jobs:
       - name: Get PR diff
         if: steps.check_ai.outputs.enabled == 'true'
         id: diff
+        shell: bash
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
           git fetch origin ${{ github.head_ref }} --depth=1
@@ -174,23 +175,24 @@ jobs:
             echo '```diff' > /tmp/diff.txt
             git diff --unified=3 origin/${{ github.base_ref }}...origin/${{ github.head_ref }} >> /tmp/diff.txt
             echo '```' >> /tmp/diff.txt
-            
-            # Truncate diff to 100k chars
 
-            python3 -c '
-import sys
+            # Truncate diff to 100k chars (keeps UTF-8)
+            python3 - <<'PY'
+import io
 p = "/tmp/diff.txt"
-data = open(p, "r", encoding="utf-8").read()
-lim = 100000
+lim = 100_000
+with open(p, "r", encoding="utf-8") as f:
+    data = f.read()
 if len(data) > lim:
     data = data[:lim] + "\n\n...[diff truncated]...\n"
-open(p, "w", encoding="utf-8").write(data)
-'
+with open(p, "w", encoding="utf-8") as f:
+    f.write(data)
+PY
             echo "has_diff=true" >> $GITHUB_OUTPUT
           else
             echo "has_diff=false" >> $GITHUB_OUTPUT
           fi
-
+          
       - name: Prepare review prompt
         if: steps.check_ai.outputs.enabled == 'true' && steps.diff.outputs.has_diff == 'true'
         run: |
