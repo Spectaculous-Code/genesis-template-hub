@@ -60,7 +60,6 @@ jobs:
 
       - name: Check for known vulnerabilities
         run: |
-          # Fail if critical vulnerabilities found
           if npm audit --audit-level=critical --json | jq -e '.metadata.vulnerabilities.critical > 0' > /dev/null 2>&1; then
             echo "❌ Critical vulnerabilities found!"
             npm audit --audit-level=critical
@@ -94,7 +93,7 @@ jobs:
   supabase_types:
     name: Supabase Types
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && secrets.SUPABASE_PROJECT_ID != '' && secrets.SUPABASE_ACCESS_TOKEN != '' }}
+    if: ${{ github.event_name == 'pull_request' }}
     env:
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -105,39 +104,67 @@ jobs:
         with: 
           node-version: 20
 
+      - name: Check if Supabase is configured
+        id: check_supabase
+        run: |
+          if [ -n "$SUPABASE_PROJECT_ID" ] && [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Supabase credentials not configured, skipping type generation"
+          fi
+
       - name: Install Supabase CLI
+        if: steps.check_supabase.outputs.configured == 'true'
         run: npm i -g supabase
 
       - name: Generate database types
+        if: steps.check_supabase.outputs.configured == 'true'
         run: supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID" > src/lib/database.types.ts
 
       - name: Verify types compile
+        if: steps.check_supabase.outputs.configured == 'true'
         run: npx tsc --noEmit
 
   ai_pr_review:
     name: AI Code Review
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && vars.AI_REVIEW_ENABLED == 'true' && secrets.OPENAI_API_KEY != '' }}
+    if: ${{ github.event_name == 'pull_request' }}
     permissions:
       contents: read
       pull-requests: write
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      AI_MODEL: ${{ vars.AI_MODEL || 'anthropic/claude-3.5-sonnet' }}
+      AI_REVIEW_ENABLED: ${{ vars.AI_REVIEW_ENABLED }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Check if AI review is enabled
+        id: check_ai
+        run: |
+          if [ "$AI_REVIEW_ENABLED" = "true" ] && [ -n "$OPENROUTER_API_KEY" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "⚠️ AI review not enabled or API key missing"
+          fi
+
       - name: Setup Node
+        if: steps.check_ai.outputs.enabled == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install GitHub CLI
+        if: steps.check_ai.outputs.enabled == 'true'
         run: sudo apt-get install gh -y
 
       - name: Get PR diff
+        if: steps.check_ai.outputs.enabled == 'true'
         id: diff
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
@@ -148,7 +175,6 @@ jobs:
             git diff --unified=3 origin/${{ github.base_ref }}...origin/${{ github.head_ref }} >> /tmp/diff.txt
             echo '```' >> /tmp/diff.txt
             
-            # Truncate to 100k chars
             python3 - <<'PY'
 import sys
 p = "/tmp/diff.txt"
@@ -164,7 +190,7 @@ PY
           fi
 
       - name: Prepare review prompt
-        if: steps.diff.outputs.has_diff == 'true'
+        if: steps.check_ai.outputs.enabled == 'true' && steps.diff.outputs.has_diff == 'true'
         run: |
           echo "You are an expert TypeScript/React code reviewer." > /tmp/prompt.txt
           echo "" >> /tmp/prompt.txt
@@ -185,18 +211,21 @@ Provide specific, actionable suggestions with code examples.
 EOF
           fi
 
-      - name: Run AI review
-        if: steps.diff.outputs.has_diff == 'true'
+      - name: Run AI review via OpenRouter
+        if: steps.check_ai.outputs.enabled == 'true' && steps.diff.outputs.has_diff == 'true'
         run: |
           node - <<'NODE'
 const fs = require('fs');
 
 const system = fs.readFileSync('/tmp/prompt.txt', 'utf8');
 const diff = fs.readFileSync('/tmp/diff.txt', 'utf8');
+const model = process.env.AI_MODEL || 'anthropic/claude-3.5-sonnet';
 
 async function main() {
+  console.log(`🤖 Using AI model: ${model}`);
+  
   const body = JSON.stringify({
-    model: "gpt-4o",
+    model: model,
     messages: [
       { role: "system", content: system },
       { role: "user", content: `Review this PR diff:\n\n${diff}` }
@@ -204,24 +233,25 @@ async function main() {
     temperature: 0.2
   });
 
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+  const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
+      "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://github.com",
+      "X-Title": "GitHub Actions CI"
     },
     body
   });
 
   if (!resp.ok) {
     const txt = await resp.text();
-    throw new Error(`OpenAI error: ${txt}`);
+    throw new Error(`OpenRouter error: ${txt}`);
   }
 
   const json = await resp.json();
   const review = json.choices?.[0]?.message?.content || "No review generated.";
 
-  // Get PR number
   const eventData = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
   const prNumber = eventData.pull_request?.number;
   
@@ -230,9 +260,8 @@ async function main() {
     return;
   }
 
-  // Post comment
   const { execSync } = require('child_process');
-  const reviewWithHeader = `## 🤖 AI Code Review\n\n${review}`;
+  const reviewWithHeader = `## 🤖 AI Code Review (${model})\n\n${review}`;
   
   execSync(`gh pr comment ${prNumber} --body-file -`, { 
     input: reviewWithHeader,
@@ -244,6 +273,6 @@ async function main() {
 
 main().catch(err => {
   console.error("❌ AI review failed:", err.message);
-  process.exit(0); // Don't fail the build
+  process.exit(0);
 });
 NODE
