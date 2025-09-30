@@ -6,7 +6,7 @@ on:
   schedule:
     # Run weekly on Monday at 2 AM UTC
     - cron: '0 2 * * 1'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -50,7 +50,6 @@ jobs:
   dependency_review:
     name: Dependency Security Check
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,13 +63,11 @@ jobs:
 
       - name: Comprehensive NPM Audit
         run: |
-          echo "## NPM Audit Report" > /tmp/audit.txt
-          echo "" >> /tmp/audit.txt
+          echo "## NPM Audit Report"
+          echo ""
           
-          # Run audit and capture output
           npm audit --json > /tmp/audit.json || true
           
-          # Parse and display results
           node - <<'NODE'
           const fs = require('fs');
           const data = JSON.parse(fs.readFileSync('/tmp/audit.json', 'utf8'));
@@ -98,31 +95,6 @@ jobs:
           echo "📦 Checking for outdated packages..."
           npm outdated || true
 
-  semgrep:
-    name: Semgrep SAST Scan
-    runs-on: ubuntu-latest
-    # Only run if Semgrep is configured
-    if: ${{ secrets.SEMGREP_APP_TOKEN != '' }}
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Semgrep scan
-        uses: returntocorp/semgrep-action@fcd5ab7459e8d91cb1777481980d1b18b4fc6735
-        with:
-          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
-          publishDeployment: ${{ secrets.SEMGREP_DEPLOYMENT_ID }}
-          generateSarif: "1"
-
-      - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep.sarif
-        if: always()
-
   secret_scan:
     name: Secret Detection
     runs-on: ubuntu-latest
@@ -142,7 +114,7 @@ jobs:
   summary:
     name: Security Summary
     runs-on: ubuntu-latest
-    needs: [codeql, dependency_review]
+    needs: [codeql, dependency_review, secret_scan]
     if: always()
     steps:
       - name: Generate summary
@@ -155,3 +127,6 @@ jobs:
           echo "### Job Status" >> $GITHUB_STEP_SUMMARY
           echo "- CodeQL: ${{ needs.codeql.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Dependencies: ${{ needs.dependency_review.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Secret Scan: ${{ needs.secret_scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Note: Semgrep scanning is managed via https://semgrep.dev" >> $GITHUB_STEP_SUMMARY
