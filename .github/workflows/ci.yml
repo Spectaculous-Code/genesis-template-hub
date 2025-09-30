@@ -175,7 +175,8 @@ jobs:
             git diff --unified=3 origin/${{ github.base_ref }}...origin/${{ github.head_ref }} >> /tmp/diff.txt
             echo '```' >> /tmp/diff.txt
             
-            python3 - <<'PY'
+            # Truncate diff to 100k chars
+            python3 <<'EOF'
 import sys
 p = "/tmp/diff.txt"
 data = open(p, 'r', encoding='utf-8').read()
@@ -183,7 +184,7 @@ lim = 100000
 if len(data) > lim:
     data = data[:lim] + "\n\n...[diff truncated]...\n"
 open(p, 'w', encoding='utf-8').write(data)
-PY
+EOF
             echo "has_diff=true" >> $GITHUB_OUTPUT
           else
             echo "has_diff=false" >> $GITHUB_OUTPUT
