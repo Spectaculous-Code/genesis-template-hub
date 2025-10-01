@@ -282,12 +282,16 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
   };
 
   const renderTaggedText = (taggedText: string) => {
+    console.log('renderTaggedText called with:', taggedText);
+    
     // First, normalize the text to handle both "word<G123>" and "word <G123>" patterns
     // Handle both Greek (G) and Hebrew (H) Strong's numbers, including multiple numbers
     const normalizedText = taggedText.replace(/\s+<([GH]\d+)>/g, '<$1>');
+    console.log('Normalized text:', normalizedText);
     
     // Parse the normalized text and create clickable Strong's words
     const words = normalizedText.split(' ');
+    console.log('Split into words:', words.length);
     
     return words.map((word, index) => {
       // Look for words with one or more Strong's numbers: word<G123><G456>
@@ -296,14 +300,18 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
         const [, wordText] = strongsMatch;
         // Extract all Strong's numbers from the word
         const strongsNumbers = word.match(/<([GH]\d+)>/g)?.map(match => match.slice(1, -1)) || [];
+        console.log('Found Strong\'s word:', wordText, 'with numbers:', strongsNumbers);
         
         return (
           <span key={index}>
             <Button
               variant="link"
               size="sm"
-              className="p-0 h-auto text-base text-foreground hover:text-primary underline font-normal"
-              onClick={() => handleStrongsClick(strongsNumbers.join(', '))}
+              className="p-0 h-auto text-base text-primary hover:text-primary/80 underline decoration-2 underline-offset-2 font-normal cursor-pointer"
+              onClick={() => {
+                console.log('Strong\'s word clicked:', strongsNumbers.join(', '));
+                handleStrongsClick(strongsNumbers.join(', '));
+              }}
             >
               {wordText}
             </Button>
@@ -357,9 +365,15 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
           {loading ? (
             <div className="text-muted-foreground">Ladataan KJV-tekstiä...</div>
           ) : kjvVerse ? (
-            <div className="text-lg leading-relaxed">
-              {renderTaggedText(kjvVerse.tagged_text)}
-            </div>
+            <>
+              {console.log('Rendering KJV verse with tagged_text:', kjvVerse.tagged_text)}
+              <div className="text-lg leading-relaxed">
+                {renderTaggedText(kjvVerse.tagged_text)}
+              </div>
+              <div className="mt-4 text-sm text-muted-foreground">
+                Klikkaa alleviivattuja sanoja nähdäksesi Strong's sanakirjan
+              </div>
+            </>
           ) : (
             <div className="text-muted-foreground">
               KJV-tekstiä ei löytynyt tälle jakeelle.
