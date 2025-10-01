@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft, Edit2, Check, X, Trash2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,11 +36,12 @@ interface BibleReference {
   version_id: string | null;
 }
 
-const SummaryPage = () => {
+const SummaryContent = () => {
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [latestSummary, setLatestSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const { setOpen } = useSidebar();
   
   // Edit states
   const [editingTitle, setEditingTitle] = useState(false);
@@ -455,28 +456,7 @@ const SummaryPage = () => {
 
   if (loading) {
     return (
-      <SidebarProvider defaultOpen={false}>
-        <div className="min-h-screen flex w-full bg-background">
-          <AppSidebar 
-            onNavigateToContinueAudio={() => navigate('/')}
-            onNavigateToContinueText={() => navigate('/')}
-            onNavigateToSummaries={() => navigate('/summaries')}
-            onNavigateToHighlights={() => navigate('/profile')}
-            selectedVerse={null}
-          />
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center py-12">
-              <div className="text-muted-foreground">Ladataan koosteitasi...</div>
-            </div>
-          </div>
-        </div>
-      </SidebarProvider>
-    );
-  }
-
-  return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen flex w-full bg-background">
+      <>
         <AppSidebar 
           onNavigateToContinueAudio={() => navigate('/')}
           onNavigateToContinueText={() => navigate('/')}
@@ -484,8 +464,32 @@ const SummaryPage = () => {
           onNavigateToHighlights={() => navigate('/profile')}
           selectedVerse={null}
         />
+        <div 
+          className="flex-1 flex items-center justify-center"
+          onMouseEnter={() => setOpen(false)}
+        >
+          <div className="text-center py-12">
+            <div className="text-muted-foreground">Ladataan koosteitasi...</div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
-        <div className="flex-1 flex flex-col">
+  return (
+    <>
+      <AppSidebar 
+        onNavigateToContinueAudio={() => navigate('/')}
+        onNavigateToContinueText={() => navigate('/')}
+        onNavigateToSummaries={() => navigate('/summaries')}
+        onNavigateToHighlights={() => navigate('/profile')}
+        selectedVerse={null}
+      />
+
+      <div 
+        className="flex-1 flex flex-col"
+        onMouseEnter={() => setOpen(false)}
+      >
           {/* Go Back Button */}
           <div className="bg-background border-b border-border/50 px-4 py-2">
             <Button
@@ -775,6 +779,15 @@ const SummaryPage = () => {
             </div>
           </div>
         </div>
+      </>
+  );
+};
+
+const SummaryPage = () => {
+  return (
+    <SidebarProvider defaultOpen={false}>
+      <div className="min-h-screen flex w-full bg-background">
+        <SummaryContent />
       </div>
     </SidebarProvider>
   );

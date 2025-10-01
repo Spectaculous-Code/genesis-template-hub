@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import VerseStudy from "@/components/VerseStudy";
 import { supabase } from "@/integrations/supabase/client";
 import { getEnglishBookName, englishToFinnishBookNames } from "@/lib/bookNameMapping";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -17,13 +17,14 @@ interface SelectedVerse {
   text: string;
 }
 
-const VerseStudyPage = () => {
+const VerseStudyContent = () => {
   const { book, chapter, verse } = useParams<{
     book: string;
     chapter: string;
     verse: string;
   }>();
   const navigate = useNavigate();
+  const { setOpen } = useSidebar();
   const [selectedVerse, setSelectedVerse] = useState<SelectedVerse | null>(null);
   const [currentVersion, setCurrentVersion] = useState<string>('fin33');
   const [loading, setLoading] = useState(true);
@@ -177,32 +178,58 @@ const VerseStudyPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Ladataan jaetutkimusta...</div>
-      </div>
-    );
-  }
-
-  if (!selectedVerse) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-muted-foreground">Jaetta ei löytynyt</div>
-      </div>
-    );
-  }
-
-  return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen flex w-full bg-background">
+      <>
         <AppSidebar 
           onNavigateToContinueAudio={handleNavigateToContinueAudio}
           onNavigateToContinueText={handleNavigateToContinueText}
           onNavigateToSummaries={handleNavigateToSummaries}
           onNavigateToHighlights={handleNavigateToHighlights}
-          selectedVerse={selectedVerse}
+          selectedVerse={null}
         />
+        <div 
+          className="flex-1 flex items-center justify-center"
+          onMouseEnter={() => setOpen(false)}
+        >
+          <div className="text-lg">Ladataan jaetutkimusta...</div>
+        </div>
+      </>
+    );
+  }
 
-        <div className="flex-1 flex flex-col">
+  if (!selectedVerse) {
+    return (
+      <>
+        <AppSidebar 
+          onNavigateToContinueAudio={handleNavigateToContinueAudio}
+          onNavigateToContinueText={handleNavigateToContinueText}
+          onNavigateToSummaries={handleNavigateToSummaries}
+          onNavigateToHighlights={handleNavigateToHighlights}
+          selectedVerse={null}
+        />
+        <div 
+          className="flex-1 flex items-center justify-center"
+          onMouseEnter={() => setOpen(false)}
+        >
+          <div className="text-lg text-muted-foreground">Jaetta ei löytynyt</div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <AppSidebar 
+        onNavigateToContinueAudio={handleNavigateToContinueAudio}
+        onNavigateToContinueText={handleNavigateToContinueText}
+        onNavigateToSummaries={handleNavigateToSummaries}
+        onNavigateToHighlights={handleNavigateToHighlights}
+        selectedVerse={selectedVerse}
+      />
+
+      <div 
+        className="flex-1 flex flex-col"
+        onMouseEnter={() => setOpen(false)}
+      >
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
@@ -230,6 +257,15 @@ const VerseStudyPage = () => {
 
           <VerseStudy selectedVerse={selectedVerse} onBack={handleBack} currentVersion={currentVersion} />
         </div>
+      </>
+  );
+};
+
+const VerseStudyPage = () => {
+  return (
+    <SidebarProvider defaultOpen={false}>
+      <div className="min-h-screen flex w-full bg-background">
+        <VerseStudyContent />
       </div>
     </SidebarProvider>
   );

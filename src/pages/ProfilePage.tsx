@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { User, BookOpen, Search, Highlighter, FileText, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,11 +15,12 @@ import UserReadingHistory from '@/components/UserReadingHistory';
 import UserHighlights from '@/components/UserHighlights';
 import UserSummaries from '@/components/UserSummaries';
 
-const ProfilePage = () => {
+const ProfileContent = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const { setOpen } = useSidebar();
   const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || '');
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,17 +105,19 @@ const ProfilePage = () => {
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar 
-          onNavigateToContinueAudio={() => navigate('/')}
-          onNavigateToContinueText={() => navigate('/')}
-          onNavigateToSummaries={() => navigate('/profile')}
-          onNavigateToHighlights={() => navigate('/profile')}
-          selectedVerse={null}
-        />
+    <>
+      <AppSidebar 
+        onNavigateToContinueAudio={() => navigate('/')}
+        onNavigateToContinueText={() => navigate('/')}
+        onNavigateToSummaries={() => navigate('/profile')}
+        onNavigateToHighlights={() => navigate('/profile')}
+        selectedVerse={null}
+      />
 
-        <div className="flex-1 flex flex-col">
+      <div 
+        className="flex-1 flex flex-col"
+        onMouseEnter={() => setOpen(false)}
+      >
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
@@ -244,6 +247,15 @@ const ProfilePage = () => {
             </Tabs>
           </div>
         </div>
+      </>
+  );
+};
+
+const ProfilePage = () => {
+  return (
+    <SidebarProvider defaultOpen={false}>
+      <div className="min-h-screen flex w-full bg-background">
+        <ProfileContent />
       </div>
     </SidebarProvider>
   );
