@@ -1,6 +1,6 @@
 // Main application entry point
 import { useState, useEffect } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import MainContent from "@/components/MainContent";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,11 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import UserMenu from "@/components/UserMenu";
 import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
 
-const Index = () => {
+const IndexContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { latestPosition } = useLatestReadingPosition();
+  const { setOpen } = useSidebar();
   const [selectedBook, setSelectedBook] = useState("");
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [targetVerse, setTargetVerse] = useState<number | undefined>();
@@ -139,17 +140,19 @@ const Index = () => {
   };
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar 
-          onNavigateToContinueAudio={handleNavigateToContinueAudio}
-          onNavigateToContinueText={handleNavigateToContinueText}
-          onNavigateToSummaries={handleNavigateToSummaries}
-          onNavigateToHighlights={handleNavigateToHighlights}
-          selectedVerse={selectedVerse}
-        />
+    <>
+      <AppSidebar 
+        onNavigateToContinueAudio={handleNavigateToContinueAudio}
+        onNavigateToContinueText={handleNavigateToContinueText}
+        onNavigateToSummaries={handleNavigateToSummaries}
+        onNavigateToHighlights={handleNavigateToHighlights}
+        selectedVerse={selectedVerse}
+      />
 
-        <div className="flex-1 flex flex-col">
+      <div 
+        className="flex-1 flex flex-col"
+        onMouseEnter={() => setOpen(false)}
+      >
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
@@ -196,6 +199,15 @@ const Index = () => {
             }}
           />
         </div>
+      </>
+  );
+};
+
+const Index = () => {
+  return (
+    <SidebarProvider defaultOpen={false}>
+      <div className="min-h-screen flex w-full bg-background">
+        <IndexContent />
       </div>
     </SidebarProvider>
   );
