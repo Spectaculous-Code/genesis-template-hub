@@ -71,23 +71,38 @@ jobs:
   openapi_types:
     name: OpenAPI Types
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && hashFiles('openapi.yaml', 'openapi.yml') != '' }}
+    if: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@v4
       
+      - name: Check if OpenAPI file exists
+        id: check_openapi
+        run: |
+          if [ -f "openapi.yaml" ] || [ -f "openapi.yml" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No OpenAPI file found, skipping type generation"
+          fi
+      
       - uses: actions/setup-node@v4
+        if: steps.check_openapi.outputs.exists == 'true'
         with: 
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      - name: Install dependencies
+        if: steps.check_openapi.outputs.exists == 'true'
+        run: npm ci
 
       - name: Generate OpenAPI types
+        if: steps.check_openapi.outputs.exists == 'true'
         run: |
           npx -y openapi-typescript ./openapi.yaml -o src/lib/openapi.types.ts || \
           npx -y openapi-typescript ./openapi.yml -o src/lib/openapi.types.ts
 
       - name: Verify types compile
+        if: steps.check_openapi.outputs.exists == 'true'
         run: npx tsc --noEmit
 
   supabase_types:
