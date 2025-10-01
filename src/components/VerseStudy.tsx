@@ -110,7 +110,8 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
       console.log('KJV version found:', kjvVersion);
 
       // Get the book ID for KJV version
-      const { data: kjvBookData, error: kjvBookError } = await supabase
+      const { data: kjvBookData, error: kjvBookError } = await (supabase as any)
+        .schema('bible_schema')
         .from('books')
         .select('id')
         .eq('name', bookName) // Use the same book name (like "Matthew")
@@ -125,7 +126,8 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
       console.log('KJV book found:', kjvBookData);
 
       // Get the chapter ID for KJV
-      const { data: kjvChapterData, error: kjvChapterError } = await supabase
+      const { data: kjvChapterData, error: kjvChapterError } = await (supabase as any)
+        .schema('bible_schema')
         .from('chapters')
         .select('id')
         .eq('book_id', kjvBookData.id)
@@ -140,7 +142,8 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
       console.log('KJV chapter found:', kjvChapterData);
 
       // Get the KJV verse - same pattern as main verse fetching
-      const { data: kjvVerseData, error: kjvVerseError } = await supabase
+      const { data: kjvVerseData, error: kjvVerseError } = await (supabase as any)
+        .schema('bible_schema')
         .from('verses')
         .select('id, text')
         .eq('chapter_id', kjvChapterData.id)
@@ -156,7 +159,8 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
       console.log('KJV verse found:', kjvVerseData);
 
       // Get Strong's words for this verse
-      const { data: strongsWords, error: strongsError } = await supabase
+      const { data: strongsWords, error: strongsError } = await (supabase as any)
+        .schema('bible_schema')
         .from('kjv_strongs_words')
         .select('word_text, word_order, strongs_number')
         .eq('verse_id', kjvVerseData.id)
