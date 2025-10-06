@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft, Edit2, Check, X, Trash2, Eye, EyeOff, MoveRight } from "lucide-react";
@@ -49,6 +50,8 @@ const SummaryContent = () => {
   const [editTitleValue, setEditTitleValue] = useState("");
   const [editingSubtitle, setEditingSubtitle] = useState<string | null>(null);
   const [editSubtitleValue, setEditSubtitleValue] = useState("");
+  const [editingTextContent, setEditingTextContent] = useState<string | null>(null);
+  const [editTextContentValue, setEditTextContentValue] = useState("");
   const [addingNewSubtitle, setAddingNewSubtitle] = useState(false);
   const [newSubtitleValue, setNewSubtitleValue] = useState("");
   
@@ -262,6 +265,45 @@ const SummaryContent = () => {
   const cancelSubtitleEdit = () => {
     setEditingSubtitle(null);
     setEditSubtitleValue("");
+  };
+
+  const startEditingTextContent = (groupId: string, currentText: string | null) => {
+    setEditingTextContent(groupId);
+    setEditTextContentValue(currentText || "");
+  };
+
+  const saveTextContent = async () => {
+    if (!editingTextContent) return;
+
+    try {
+      const { error } = await supabase
+        .from('summary_groups')
+        .update({ text_content: editTextContentValue.trim() || null })
+        .eq('id', editingTextContent);
+
+      if (error) throw error;
+
+      toast({
+        title: "Tallennettu",
+        description: "Tekstisisältö päivitetty"
+      });
+
+      setEditingTextContent(null);
+      setEditTextContentValue("");
+      fetchSummaries();
+    } catch (error) {
+      console.error('Error updating text content:', error);
+      toast({
+        title: "Virhe",
+        description: "Tekstisisällön päivittäminen epäonnistui",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelTextContentEdit = () => {
+    setEditingTextContent(null);
+    setEditTextContentValue("");
   };
 
   const startAddingNewSubtitle = () => {
@@ -653,8 +695,53 @@ const SummaryContent = () => {
                                   </Button>
                                 </div>
                               )}
-                              {group.text_content && (
-                                <p className="text-muted-foreground mb-3">{group.text_content}</p>
+                              
+                              {/* Text content editing */}
+                              {editingTextContent === group.id ? (
+                                <div className="mb-3">
+                                  <Textarea
+                                    value={editTextContentValue}
+                                    onChange={(e) => setEditTextContentValue(e.target.value)}
+                                    placeholder="Lisää vapaamuotoista tekstiä tähän ryhmään..."
+                                    className="min-h-[100px] mb-2"
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={saveTextContent}>
+                                      <Check className="h-4 w-4 mr-1" />
+                                      Tallenna
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={cancelTextContentEdit}>
+                                      <X className="h-4 w-4 mr-1" />
+                                      Peruuta
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mb-3 group/text">
+                                  {group.text_content ? (
+                                    <div className="relative">
+                                      <p className="text-muted-foreground whitespace-pre-wrap">{group.text_content}</p>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => startEditingTextContent(group.id, group.text_content)}
+                                        className="absolute top-0 right-0 opacity-0 group-hover/text:opacity-100 transition-opacity"
+                                      >
+                                        <Edit2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => startEditingTextContent(group.id, null)}
+                                      className="text-muted-foreground hover:text-foreground text-xs"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Lisää tekstisisältö
+                                    </Button>
+                                  )}
+                                </div>
                               )}
                                {group.bible_references.length > 0 && (
                                 <div className="space-y-1">
