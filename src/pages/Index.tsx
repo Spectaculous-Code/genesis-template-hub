@@ -145,7 +145,6 @@ const IndexContent = () => {
         onNavigateToContinueAudio={handleNavigateToContinueAudio}
         onNavigateToContinueText={handleNavigateToContinueText}
         onNavigateToSummaries={handleNavigateToSummaries}
-        onNavigateToHighlights={handleNavigateToHighlights}
         selectedVerse={selectedVerse}
       />
 

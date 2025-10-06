@@ -529,7 +529,6 @@ const SummaryContent = () => {
           onNavigateToContinueAudio={() => navigate('/')}
           onNavigateToContinueText={() => navigate('/')}
           onNavigateToSummaries={() => navigate('/summaries')}
-          onNavigateToHighlights={() => navigate('/profile')}
           selectedVerse={null}
         />
         <div 
@@ -550,7 +549,6 @@ const SummaryContent = () => {
         onNavigateToContinueAudio={() => navigate('/')}
         onNavigateToContinueText={() => navigate('/')}
         onNavigateToSummaries={() => navigate('/summaries')}
-        onNavigateToHighlights={() => navigate('/profile')}
         selectedVerse={null}
       />
 

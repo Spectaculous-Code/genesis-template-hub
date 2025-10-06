@@ -110,7 +110,6 @@ const ProfileContent = () => {
         onNavigateToContinueAudio={() => navigate('/')}
         onNavigateToContinueText={() => navigate('/')}
         onNavigateToSummaries={() => navigate('/profile')}
-        onNavigateToHighlights={() => navigate('/profile')}
         selectedVerse={null}
       />
 

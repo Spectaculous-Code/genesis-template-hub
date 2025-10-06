@@ -32,7 +32,6 @@ interface AppSidebarProps {
   onNavigateToContinueAudio: () => void;
   onNavigateToContinueText: (book?: string, chapter?: number) => void;
   onNavigateToSummaries: () => void;
-  onNavigateToHighlights: () => void;
   selectedVerse?: {
     bookName: string;
     chapter: number;
@@ -45,7 +44,6 @@ export function AppSidebar({
   onNavigateToContinueAudio,
   onNavigateToContinueText,
   onNavigateToSummaries,
-  onNavigateToHighlights,
   selectedVerse
 }: AppSidebarProps) {
   const { state, open, isMobile, toggleSidebar } = useSidebar();
@@ -252,9 +250,11 @@ export function AppSidebar({
 
               {/* Highlights */}
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={onNavigateToHighlights}>
-                  <Highlighter className="h-4 w-4" />
-                  {!collapsed && <span>Korostukseni ({highlightsCount} kpl)</span>}
+                <SidebarMenuButton asChild>
+                  <Link to="/profile?tab=korostukset">
+                    <Highlighter className="h-4 w-4" />
+                    {!collapsed && <span>Korostukseni ({highlightsCount} kpl)</span>}
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

@@ -183,7 +183,6 @@ const VerseStudyContent = () => {
           onNavigateToContinueAudio={handleNavigateToContinueAudio}
           onNavigateToContinueText={handleNavigateToContinueText}
           onNavigateToSummaries={handleNavigateToSummaries}
-          onNavigateToHighlights={handleNavigateToHighlights}
           selectedVerse={null}
         />
         <div 
@@ -203,7 +202,6 @@ const VerseStudyContent = () => {
           onNavigateToContinueAudio={handleNavigateToContinueAudio}
           onNavigateToContinueText={handleNavigateToContinueText}
           onNavigateToSummaries={handleNavigateToSummaries}
-          onNavigateToHighlights={handleNavigateToHighlights}
           selectedVerse={null}
         />
         <div 
@@ -222,7 +220,6 @@ const VerseStudyContent = () => {
         onNavigateToContinueAudio={handleNavigateToContinueAudio}
         onNavigateToContinueText={handleNavigateToContinueText}
         onNavigateToSummaries={handleNavigateToSummaries}
-        onNavigateToHighlights={handleNavigateToHighlights}
         selectedVerse={selectedVerse}
       />
 
