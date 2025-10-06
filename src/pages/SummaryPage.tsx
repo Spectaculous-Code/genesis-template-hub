@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft, Edit2, Check, X, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, FileText, Calendar, User, BookOpen, Search, ArrowLeft, Edit2, Check, X, Trash2, Eye, EyeOff, MoveRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { fi } from "date-fns/locale";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Summary {
   id: string;
@@ -315,6 +316,31 @@ const SummaryContent = () => {
   const cancelNewSubtitle = () => {
     setAddingNewSubtitle(false);
     setNewSubtitleValue("");
+  };
+
+  const moveBibleReference = async (referenceId: string, newGroupId: string, referenceText: string) => {
+    try {
+      const { error } = await supabase
+        .from('summary_bible_references')
+        .update({ group_id: newGroupId })
+        .eq('id', referenceId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Siirretty",
+        description: `Viittaus "${referenceText}" siirretty toiseen ryhmään`
+      });
+
+      fetchSummaries();
+    } catch (error) {
+      console.error('Error moving bible reference:', error);
+      toast({
+        title: "Virhe",
+        description: "Viittauksen siirtäminen epäonnistui",
+        variant: "destructive"
+      });
+    }
   };
 
   const deleteBibleReference = async (referenceId: string) => {
@@ -630,7 +656,7 @@ const SummaryContent = () => {
                               {group.text_content && (
                                 <p className="text-muted-foreground mb-3">{group.text_content}</p>
                               )}
-                              {group.bible_references.length > 0 && (
+                               {group.bible_references.length > 0 && (
                                 <div className="space-y-1">
                                   <h4 className="text-sm font-medium text-muted-foreground">Raamatunviittaukset:</h4>
                                    <ul className="space-y-2">
@@ -653,6 +679,30 @@ const SummaryContent = () => {
                                              )}
                                            </Button>
                                            <span className="text-sm flex-1">• {ref.reference_text}</span>
+                                           
+                                           {/* Move to group dropdown */}
+                                           {latestSummary && latestSummary.groups.length > 1 && (
+                                             <Select
+                                               value={group.id}
+                                               onValueChange={(newGroupId) => moveBibleReference(ref.id, newGroupId, ref.reference_text)}
+                                             >
+                                               <SelectTrigger className="h-6 w-auto gap-1 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity border-muted-foreground/30">
+                                                 <MoveRight className="h-3 w-3" />
+                                               </SelectTrigger>
+                                               <SelectContent>
+                                                 {latestSummary.groups.map((g) => (
+                                                   <SelectItem 
+                                                     key={g.id} 
+                                                     value={g.id}
+                                                     disabled={g.id === group.id}
+                                                   >
+                                                     {g.subtitle} {g.id === group.id && "(nykyinen)"}
+                                                   </SelectItem>
+                                                 ))}
+                                               </SelectContent>
+                                             </Select>
+                                           )}
+                                           
                                            <Button
                                              size="sm"
                                              variant="ghost"
@@ -673,7 +723,7 @@ const SummaryContent = () => {
                                      ))}
                                    </ul>
                                 </div>
-                              )}
+                               )}
                             </div>
                           ))}
                           
