@@ -182,22 +182,21 @@ export function AppSidebar({
               {/* Continue Text */}
               <SidebarMenuItem>
                 <div className="space-y-1">
-                  <SidebarMenuButton 
-                    onClick={() => {
-                      if (lastReadingData) {
-                        // Navigate to the saved reading position
-                        onNavigateToContinueText(lastReadingData.book, lastReadingData.chapter);
-                      } else {
-                        onNavigateToContinueText();
-                      }
-                    }}
-                    className={lastReadingData ? "cursor-pointer" : ""}
-                  >
-                    <FileText className="h-4 w-4" />
-                    {!collapsed && <span>Kirjanmerkki</span>}
+                  <SidebarMenuButton asChild>
+                    <Link to="/profile?tab=kirjanmerkit">
+                      <FileText className="h-4 w-4" />
+                      {!collapsed && <span>Kirjanmerkki</span>}
+                    </Link>
                   </SidebarMenuButton>
                   {!collapsed && (
-                    <div className={`ml-8 text-xs ${lastReadingData ? 'text-primary cursor-pointer' : 'text-muted-foreground'}`}>
+                    <div 
+                      className={`ml-8 text-xs ${lastReadingData ? 'text-primary cursor-pointer hover:underline' : 'text-muted-foreground'}`}
+                      onClick={() => {
+                        if (lastReadingData) {
+                          onNavigateToContinueText(lastReadingData.book, lastReadingData.chapter);
+                        }
+                      }}
+                    >
                       {lastTextPosition}
                     </div>
                   )}
