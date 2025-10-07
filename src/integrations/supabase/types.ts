@@ -1106,6 +1106,19 @@ export type Database = {
           tagged_text: string
         }[]
       }
+      get_user_highlights: {
+        Args: { p_user_id: string }
+        Returns: {
+          book_name: string
+          chapter_number: number
+          color: string
+          created_at: string
+          id: string
+          verse_id: string
+          verse_number: number
+          verse_text: string
+        }[]
+      }
       get_verse_by_ref: {
         Args: {
           p_chapter: number

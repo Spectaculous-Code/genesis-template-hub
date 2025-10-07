@@ -13,17 +13,11 @@ interface UserHighlight {
   id: string;
   color: string;
   created_at: string;
-  verses: {
-    id: string;
-    verse_number: number;
-    text: string;
-    chapters: {
-      chapter_number: number;
-      books: {
-        name: string;
-      };
-    };
-  };
+  verse_id: string;
+  verse_number: number;
+  verse_text: string;
+  chapter_number: number;
+  book_name: string;
 }
 
 const UserHighlights = () => {
@@ -46,23 +40,9 @@ const UserHighlights = () => {
 
     try {
       const { data, error } = await supabase
-        .from('highlights')
-        .select(`
-          id,
-          color,
-          created_at,
-          verses!inner(
-            id,
-            verse_number,
-            text,
-            chapters!inner(
-              chapter_number,
-              books!inner(name)
-            )
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .rpc('get_user_highlights', {
+          p_user_id: user.id
+        });
 
       if (error) {
         console.error('Error fetching highlights:', error);
@@ -109,12 +89,8 @@ const UserHighlights = () => {
   };
 
   const handleOpenVerse = (highlight: UserHighlight) => {
-    const bookName = highlight.verses.chapters.books.name;
-    const chapterNumber = highlight.verses.chapters.chapter_number;
-    const verseNumber = highlight.verses.verse_number;
-    
     // Navigate to the main page with query parameters
-    navigate(`/?book=${encodeURIComponent(bookName)}&chapter=${chapterNumber}&verse=${verseNumber}`);
+    navigate(`/?book=${encodeURIComponent(highlight.book_name)}&chapter=${highlight.chapter_number}&verse=${highlight.verse_number}`);
   };
 
   if (!user) {
@@ -185,8 +161,8 @@ const UserHighlights = () => {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">
-                  {getFinnishBookName(highlight.verses.chapters.books.name)} {' '}
-                  {highlight.verses.chapters.chapter_number}:{highlight.verses.verse_number}
+                  {getFinnishBookName(highlight.book_name)} {' '}
+                  {highlight.chapter_number}:{highlight.verse_number}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <div 
@@ -216,7 +192,7 @@ const UserHighlights = () => {
             </CardHeader>
             <CardContent>
               <div className={`p-3 rounded-lg ${getHighlightColor(highlight.color)}`}>
-                <p className="text-sm leading-relaxed">{highlight.verses.text}</p>
+                <p className="text-sm leading-relaxed">{highlight.verse_text}</p>
               </div>
             </CardContent>
           </Card>
