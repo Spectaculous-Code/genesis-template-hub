@@ -239,7 +239,7 @@ export function AppSidebar({
               {/* My Summaries */}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Link to="/profile?tab=summaries">
+                  <Link to="/profile?tab=koosteet">
                     <FileText className="h-4 w-4" />
                     {!collapsed && <span>Koosteeni ({summariesCount} kpl)</span>}
                   </Link>
