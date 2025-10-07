@@ -141,10 +141,9 @@ const IndexContent = () => {
 
   return (
     <>
-      <AppSidebar 
+      <AppSidebar
         onNavigateToContinueAudio={handleNavigateToContinueAudio}
         onNavigateToContinueText={handleNavigateToContinueText}
-        onNavigateToSummaries={handleNavigateToSummaries}
         selectedVerse={selectedVerse}
       />
 

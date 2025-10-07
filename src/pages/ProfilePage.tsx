@@ -106,10 +106,9 @@ const ProfileContent = () => {
 
   return (
     <>
-      <AppSidebar 
+      <AppSidebar
         onNavigateToContinueAudio={() => navigate('/')}
         onNavigateToContinueText={() => navigate('/')}
-        onNavigateToSummaries={() => navigate('/profile')}
         selectedVerse={null}
       />
 

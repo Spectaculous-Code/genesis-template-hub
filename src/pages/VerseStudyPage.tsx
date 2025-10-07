@@ -179,10 +179,9 @@ const VerseStudyContent = () => {
   if (loading) {
     return (
       <>
-        <AppSidebar 
+        <AppSidebar
           onNavigateToContinueAudio={handleNavigateToContinueAudio}
           onNavigateToContinueText={handleNavigateToContinueText}
-          onNavigateToSummaries={handleNavigateToSummaries}
           selectedVerse={null}
         />
         <div 
@@ -198,10 +197,9 @@ const VerseStudyContent = () => {
   if (!selectedVerse) {
     return (
       <>
-        <AppSidebar 
+        <AppSidebar
           onNavigateToContinueAudio={handleNavigateToContinueAudio}
           onNavigateToContinueText={handleNavigateToContinueText}
-          onNavigateToSummaries={handleNavigateToSummaries}
           selectedVerse={null}
         />
         <div 
@@ -216,10 +214,9 @@ const VerseStudyContent = () => {
 
   return (
     <>
-      <AppSidebar 
+      <AppSidebar
         onNavigateToContinueAudio={handleNavigateToContinueAudio}
         onNavigateToContinueText={handleNavigateToContinueText}
-        onNavigateToSummaries={handleNavigateToSummaries}
         selectedVerse={selectedVerse}
       />
 

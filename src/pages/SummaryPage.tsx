@@ -525,10 +525,9 @@ const SummaryContent = () => {
   if (loading) {
     return (
       <>
-        <AppSidebar 
+        <AppSidebar
           onNavigateToContinueAudio={() => navigate('/')}
           onNavigateToContinueText={() => navigate('/')}
-          onNavigateToSummaries={() => navigate('/summaries')}
           selectedVerse={null}
         />
         <div 
@@ -545,10 +544,9 @@ const SummaryContent = () => {
 
   return (
     <>
-      <AppSidebar 
+      <AppSidebar
         onNavigateToContinueAudio={() => navigate('/')}
         onNavigateToContinueText={() => navigate('/')}
-        onNavigateToSummaries={() => navigate('/summaries')}
         selectedVerse={null}
       />
 

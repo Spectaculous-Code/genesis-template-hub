@@ -31,7 +31,6 @@ import { Link } from "react-router-dom";
 interface AppSidebarProps {
   onNavigateToContinueAudio: () => void;
   onNavigateToContinueText: (book?: string, chapter?: number) => void;
-  onNavigateToSummaries: () => void;
   selectedVerse?: {
     bookName: string;
     chapter: number;
@@ -43,7 +42,6 @@ interface AppSidebarProps {
 export function AppSidebar({
   onNavigateToContinueAudio,
   onNavigateToContinueText,
-  onNavigateToSummaries,
   selectedVerse
 }: AppSidebarProps) {
   const { state, open, isMobile, toggleSidebar } = useSidebar();
