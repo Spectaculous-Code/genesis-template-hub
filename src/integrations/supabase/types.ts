@@ -373,36 +373,7 @@ export type Database = {
           user_id?: string | null
           verse_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "highlights_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_mv"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "highlights_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_user_v"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "highlights_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "user_verse_counts_v"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "highlights_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "verses"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       kjv_strongs_words: {
         Row: {
