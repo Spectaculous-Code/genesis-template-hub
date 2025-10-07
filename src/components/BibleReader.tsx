@@ -180,10 +180,17 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
     
     // Find the verse ID from chapter data
     const verse = chapterData?.verses.find(v => v.verse_number === verseNumber);
-    if (!verse) {
-      console.error('Verse not found:', verseNumber);
+    if (!verse || !verse.id) {
+      console.error('Verse or verse.id not found:', verseNumber, verse);
+      toast({
+        title: "Virhe",
+        description: "Jakeen tietojen hakeminen epäonnistui",
+        variant: "destructive"
+      });
       return;
     }
+
+    console.log('Toggling highlight for verse:', verseNumber, 'verse_id:', verse.id, 'user_id:', user.id);
 
     try {
       if (newHighlights.has(verseNumber)) {
@@ -216,24 +223,26 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
         newHighlights.add(verseNumber);
         
         // Save to database
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('highlights')
           .insert({
             verse_id: verse.id,
             user_id: user.id,
             color: '#FFFF00' // Default yellow highlight
-          });
+          })
+          .select();
 
         if (error) {
-          console.error('Error saving highlight:', error);
+          console.error('Error saving highlight:', error, 'Data:', { verse_id: verse.id, user_id: user.id });
           toast({
             title: "Virhe", 
-            description: "Korostuksen tallentaminen epäonnistui",
+            description: `Korostuksen tallentaminen epäonnistui: ${error.message}`,
             variant: "destructive"
           });
           return;
         }
 
+        console.log('Highlight saved successfully:', data);
         toast({
           title: "Jae korostettu",
           description: `${getFinnishBookName(book)} ${chapter}:${verseNumber}`,
@@ -251,24 +260,139 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
     }
   };
 
-  const toggleBookmark = () => {
+  const toggleBookmark = async () => {
+    if (!user) {
+      toast({
+        title: "Kirjaudu sisään",
+        description: "Kirjanmerkkien lisäämiseen sinun täytyy olla kirjautuneena",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!chapterData) return;
+
     const bookmarkKey = `${book}_${chapter}`;
     const newBookmarks = new Set(bookmarks);
     
-    if (newBookmarks.has(bookmarkKey)) {
-      newBookmarks.delete(bookmarkKey);
+    try {
+      // Get version ID
+      const { data: versionData } = await (supabase as any)
+        .schema('bible_schema')
+        .from('bible_versions')
+        .select('id')
+        .eq('code', versionCode)
+        .single();
+
+      if (!versionData) {
+        toast({
+          title: "Virhe",
+          description: "Raamatun version hakeminen epäonnistui",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get book ID
+      const { data: bookData } = await (supabase as any)
+        .schema('bible_schema')
+        .from('books')
+        .select('id')
+        .eq('name', book)
+        .eq('version_id', versionData.id)
+        .single();
+
+      if (!bookData) {
+        toast({
+          title: "Virhe",
+          description: "Kirjan tietojen hakeminen epäonnistui",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get chapter ID
+      const { data: chapterDataDb } = await (supabase as any)
+        .schema('bible_schema')
+        .from('chapters')
+        .select('id')
+        .eq('book_id', bookData.id)
+        .eq('chapter_number', chapter)
+        .single();
+
+      if (!chapterDataDb) {
+        toast({
+          title: "Virhe",
+          description: "Luvun tietojen hakeminen epäonnistui",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (newBookmarks.has(bookmarkKey)) {
+        // Remove bookmark
+        newBookmarks.delete(bookmarkKey);
+        
+        // Delete from database - find by chapter_id
+        const { error } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('chapter_id', chapterDataDb.id)
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Error removing bookmark:', error);
+          toast({
+            title: "Virhe",
+            description: "Kirjanmerkin poistaminen epäonnistui",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        toast({
+          title: "Kirjanmerkki poistettu",
+          description: `${getFinnishBookName(book)} ${chapter}`,
+        });
+      } else {
+        // Add bookmark
+        newBookmarks.add(bookmarkKey);
+        
+        // Save to database
+        const { error } = await supabase
+          .from('bookmarks')
+          .insert({
+            user_id: user.id,
+            chapter_id: chapterDataDb.id,
+            verse_id: null, // Bookmark is for the whole chapter
+            osis: `${book}.${chapter}`
+          });
+
+        if (error) {
+          console.error('Error saving bookmark:', error);
+          toast({
+            title: "Virhe",
+            description: `Kirjanmerkin tallentaminen epäonnistui: ${error.message}`,
+            variant: "destructive"
+          });
+          return;
+        }
+
+        toast({
+          title: "Kirjanmerkki lisätty",
+          description: `${getFinnishBookName(book)} ${chapter}`,
+        });
+      }
+      
+      setBookmarks(newBookmarks);
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
       toast({
-        title: "Kirjanmerkki poistettu",
-        description: `${getFinnishBookName(book)} ${chapter}`,
-      });
-    } else {
-      newBookmarks.add(bookmarkKey);
-      toast({
-        title: "Kirjanmerkki lisätty",
-        description: `${getFinnishBookName(book)} ${chapter}`,
+        title: "Virhe",
+        description: "Kirjanmerkin käsitteleminen epäonnistui",
+        variant: "destructive"
       });
     }
-    setBookmarks(newBookmarks);
   };
 
   const navigateChapter = async (direction: 'prev' | 'next') => {
