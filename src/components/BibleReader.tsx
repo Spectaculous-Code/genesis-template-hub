@@ -276,51 +276,17 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
     const newBookmarks = new Set(bookmarks);
     
     try {
-      // Get version ID
-      const { data: versionData } = await (supabase as any)
-        .schema('bible_schema')
-        .from('bible_versions')
-        .select('id')
-        .eq('code', versionCode)
-        .single();
-
-      if (!versionData) {
-        toast({
-          title: "Virhe",
-          description: "Raamatun version hakeminen epäonnistui",
-          variant: "destructive"
+      // Get OSIS for the first verse of this chapter
+      const { data: chapterVerses, error: chapterErr } = await (supabase as any)
+        .rpc('get_verses_by_ref', {
+          p_ref_book: book,
+          p_chapter: chapter,
+          p_verses: [1],
+          p_version_code: versionCode,
+          p_language_code: 'fi'
         });
-        return;
-      }
 
-      // Get book ID
-      const { data: bookData } = await (supabase as any)
-        .schema('bible_schema')
-        .from('books')
-        .select('id')
-        .eq('name', book)
-        .eq('version_id', versionData.id)
-        .single();
-
-      if (!bookData) {
-        toast({
-          title: "Virhe",
-          description: "Kirjan tietojen hakeminen epäonnistui",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Get chapter ID
-      const { data: chapterDataDb } = await (supabase as any)
-        .schema('bible_schema')
-        .from('chapters')
-        .select('id')
-        .eq('book_id', bookData.id)
-        .eq('chapter_number', chapter)
-        .single();
-
-      if (!chapterDataDb) {
+      if (chapterErr || !Array.isArray(chapterVerses) || chapterVerses.length === 0) {
         toast({
           title: "Virhe",
           description: "Luvun tietojen hakeminen epäonnistui",
@@ -328,16 +294,53 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
         });
         return;
       }
-      
+
+      const osisFirst: string = chapterVerses[0].osis;
+
+      // Map OSIS to public verse_id
+      const { data: mapped, error: mapErr } = await (supabase as any)
+        .rpc('map_osis_to_verse_ids', {
+          p_version_code: versionCode,
+          p_osis: [osisFirst]
+        });
+
+      if (mapErr || !Array.isArray(mapped) || mapped.length === 0) {
+        toast({
+          title: "Virhe",
+          description: "Jaetunnisteen hakeminen epäonnistui",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const publicVerseId = mapped[0].verse_id as string;
+
+      // Resolve chapter_id from public.verses
+      const { data: verseRow, error: verseErr } = await supabase
+        .from('verses')
+        .select('chapter_id')
+        .eq('id', publicVerseId)
+        .maybeSingle();
+
+      if (verseErr || !verseRow) {
+        toast({
+          title: "Virhe",
+          description: "Luvun tunnisteen hakeminen epäonnistui",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const publicChapterId = verseRow.chapter_id as string;
+
       if (newBookmarks.has(bookmarkKey)) {
         // Remove bookmark
         newBookmarks.delete(bookmarkKey);
-        
-        // Delete from database - find by chapter_id
+
         const { error } = await supabase
           .from('bookmarks')
           .delete()
-          .eq('chapter_id', chapterDataDb.id)
+          .eq('chapter_id', publicChapterId)
           .eq('user_id', user.id);
 
         if (error) {
@@ -355,17 +358,16 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
           description: `${getFinnishBookName(book)} ${chapter}`,
         });
       } else {
-        // Add bookmark
+        // Add bookmark (store both chapter_id and first verse_id for display)
         newBookmarks.add(bookmarkKey);
-        
-        // Save to database
+
         const { error } = await supabase
           .from('bookmarks')
           .insert({
             user_id: user.id,
-            chapter_id: chapterDataDb.id,
-            verse_id: null, // Bookmark is for the whole chapter
-            osis: `${book}.${chapter}`
+            chapter_id: publicChapterId,
+            verse_id: publicVerseId,
+            osis: osisFirst
           });
 
         if (error) {

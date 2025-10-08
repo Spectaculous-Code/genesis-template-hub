@@ -164,7 +164,7 @@ const MainContent = ({
         return;
       }
 
-      // Get chapter info to get chapter_id and construct OSIS
+      // Get OSIS for the first verse in the selected chapter
       const { data: chapterData, error: chapterError } = await (supabase as any)
         .rpc('get_chapter_by_ref', {
           p_ref_book: selectedBook,
@@ -178,51 +178,40 @@ const MainContent = ({
       }
 
       const firstVerse = chapterData[0];
-      const osis = `${firstVerse.book_code}.${selectedChapter}.1`;
+      const osis: string = firstVerse.osis || `${firstVerse.book_code}.${selectedChapter}.1`;
 
-      // Get version ID first
-      const { data: versionData } = await (supabase as any)
-        .schema('bible_schema')
-        .from('bible_versions')
-        .select('id')
-        .eq('code', currentVersionCode)
-        .single();
+      // Map OSIS to public verse_id
+      const { data: mapped, error: mapErr } = await (supabase as any)
+        .rpc('map_osis_to_verse_ids', {
+          p_version_code: currentVersionCode,
+          p_osis: [osis]
+        });
 
-      if (!versionData) {
-        throw new Error('Version not found');
+      if (mapErr || !Array.isArray(mapped) || mapped.length === 0) {
+        throw new Error('Verse mapping failed');
       }
 
-      // Get book_id with version_id
-      const { data: bookData, error: bookError } = await (supabase as any)
-        .schema('bible_schema')
-        .from('books')
-        .select('id')
-        .eq('name', selectedBook)
-        .eq('version_id', versionData.id)
+      const publicVerseId = mapped[0].verse_id as string;
+
+      // Resolve public chapter_id from public.verses
+      const { data: verseRow, error: verseErr } = await supabase
+        .from('verses')
+        .select('chapter_id')
+        .eq('id', publicVerseId)
         .single();
 
-      if (bookError || !bookData) {
-        throw new Error('Book not found');
-      }
-
-      // Get chapter_id from chapters table
-      const { data: chapterRecord, error: chapterRecordError } = await supabase
-        .from('chapters')
-        .select('id')
-        .eq('chapter_number', selectedChapter)
-        .eq('book_id', bookData.id)
-        .single();
-
-      if (chapterRecordError || !chapterRecord) {
+      if (verseErr || !verseRow) {
         throw new Error('Chapter record not found');
       }
+
+      const chapterId = verseRow.chapter_id as string;
 
       // Check for existing bookmark to avoid duplicates
       const { data: existingBookmark } = await supabase
         .from('bookmarks')
         .select('id')
         .eq('user_id', user.id)
-        .eq('chapter_id', chapterRecord.id)
+        .eq('chapter_id', chapterId)
         .maybeSingle();
 
       if (existingBookmark) {
@@ -234,14 +223,14 @@ const MainContent = ({
         return;
       }
 
-      // Save bookmark with chapter_id and osis
+      // Save bookmark with both chapter_id and verse_id
       const { error } = await supabase
         .from('bookmarks')
         .insert({
           user_id: user.id,
-          chapter_id: chapterRecord.id,
-          osis: osis,
-          verse_id: null // Save at chapter level by default
+          chapter_id: chapterId,
+          verse_id: publicVerseId,
+          osis
         });
 
       if (error) {
