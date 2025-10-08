@@ -180,18 +180,8 @@ const MainContent = ({
       const firstVerse = chapterData[0];
       const osis: string = firstVerse.osis || `${firstVerse.book_code}.${selectedChapter}.1`;
 
-      // Map OSIS to public verse_id
-      const { data: mapped, error: mapErr } = await (supabase as any)
-        .rpc('map_osis_to_verse_ids', {
-          p_version_code: currentVersionCode,
-          p_osis: [osis]
-        });
-
-      if (mapErr || !Array.isArray(mapped) || mapped.length === 0) {
-        throw new Error('Verse mapping failed');
-      }
-
-      const publicVerseId = mapped[0].verse_id as string;
+      // Use verse_id returned by get_chapter_by_ref to avoid mapping failures for some versions
+      const publicVerseId = firstVerse.verse_id as string;
 
       // Resolve public chapter_id from public.verses
       const { data: verseRow, error: verseErr } = await supabase
