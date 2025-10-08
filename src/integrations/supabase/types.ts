@@ -1171,6 +1171,15 @@ export type Database = {
         Args: { p_book_id: string }
         Returns: string
       }
+      save_bookmark: {
+        Args: {
+          p_book_name: string
+          p_chapter_number: number
+          p_user_id: string
+          p_version_code: string
+        }
+        Returns: Json
+      }
       search_text: {
         Args: { p_limit?: number; p_query: string; p_version_code?: string }
         Returns: {

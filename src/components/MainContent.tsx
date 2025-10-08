@@ -164,67 +164,29 @@ const MainContent = ({
         return;
       }
 
-      // Get OSIS for the first verse in the selected chapter
-      const { data: chapterData, error: chapterError } = await (supabase as any)
-        .rpc('get_chapter_by_ref', {
-          p_ref_book: selectedBook,
-          p_chapter: selectedChapter,
+      // Tallenna kirjanmerkki palvelimella (hoitaa schema-mäppäyksen)
+      const { data: saved, error: saveErr } = await (supabase as any)
+        .rpc('save_bookmark', {
+          p_user_id: user.id,
+          p_book_name: selectedBook,
+          p_chapter_number: selectedChapter,
           p_version_code: currentVersionCode,
-          p_language_code: 'fi'
         });
 
-      if (chapterError || !Array.isArray(chapterData) || chapterData.length === 0) {
-        throw new Error('Chapter not found');
+      if (saveErr) {
+        throw saveErr;
       }
 
-      const firstVerse = chapterData[0];
-      const osis: string = firstVerse.osis || `${firstVerse.book_code}.${selectedChapter}.1`;
-
-      // Use verse_id returned by get_chapter_by_ref to avoid mapping failures for some versions
-      const publicVerseId = firstVerse.verse_id as string;
-
-      // Resolve public chapter_id from public.verses
-      const { data: verseRow, error: verseErr } = await supabase
-        .from('verses')
-        .select('chapter_id')
-        .eq('id', publicVerseId)
-        .single();
-
-      if (verseErr || !verseRow) {
-        throw new Error('Chapter record not found');
-      }
-
-      const chapterId = verseRow.chapter_id as string;
-
-      // Check for existing bookmark to avoid duplicates
-      const { data: existingBookmark } = await supabase
-        .from('bookmarks')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('chapter_id', chapterId)
-        .maybeSingle();
-
-      if (existingBookmark) {
-        toast({
-          title: "Kirjanmerkki on jo olemassa",
-          description: `${getFinnishBookName(selectedBook)} ${selectedChapter}`,
-          variant: "default"
-        });
-        return;
-      }
-
-      // Save bookmark with both chapter_id and verse_id
-      const { error } = await supabase
-        .from('bookmarks')
-        .insert({
-          user_id: user.id,
-          chapter_id: chapterId,
-          verse_id: publicVerseId,
-          osis
-        });
-
-      if (error) {
-        throw error;
+      if (!saved?.success) {
+        if (saved?.error === 'Bookmark already exists') {
+          toast({
+            title: "Kirjanmerkki on jo olemassa",
+            description: `${getFinnishBookName(selectedBook)} ${selectedChapter}`,
+            variant: "default",
+          });
+          return;
+        }
+        throw new Error(saved?.error || 'Kirjanmerkin tallennus epäonnistui');
       }
       
       toast({
