@@ -168,7 +168,10 @@ const UserReadingHistory = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="font-medium">
-                    {getFinnishBookName(bookmark.verse.chapter.book.name)} {bookmark.verse.chapter.chapter_number}:{bookmark.verse.verse_number} ({bookmark.verse.version.code}, {format(new Date(bookmark.created_at), 'dd.MM.yyyy')})
+                    {getFinnishBookName(bookmark.verse.chapter.book.name)} {bookmark.verse.chapter.chapter_number}:{bookmark.verse.verse_number}{' '}
+                    <span className="text-xs text-muted-foreground">
+                      [{bookmark.verse.version.code}, {format(new Date(bookmark.created_at), 'dd.MM.yyyy')}]
+                    </span>
                   </h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {bookmark.verse.text}
