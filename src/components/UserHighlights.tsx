@@ -163,6 +163,10 @@ const UserHighlights = () => {
                 <CardTitle className="text-base">
                   {getFinnishBookName(highlight.book_name)} {' '}
                   {highlight.chapter_number}:{highlight.verse_number}
+                  {' '}
+                  <span className="text-xs text-muted-foreground">
+                    [{new Date(highlight.created_at).toLocaleDateString('fi-FI')}]
+                  </span>
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <div 
@@ -186,9 +190,6 @@ const UserHighlights = () => {
                   </Button>
                 </div>
               </div>
-              <CardDescription>
-                Korostettu {new Date(highlight.created_at).toLocaleDateString('fi-FI')}
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className={`p-3 rounded-lg ${getHighlightColor(highlight.color)}`}>
