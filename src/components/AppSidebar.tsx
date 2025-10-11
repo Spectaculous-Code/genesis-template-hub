@@ -44,9 +44,22 @@ export function AppSidebar({
   onNavigateToContinueText,
   selectedVerse
 }: AppSidebarProps) {
-  const { state, open, isMobile, toggleSidebar } = useSidebar();
+  const { state, open, isMobile, toggleSidebar, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
   const { user } = useAuth();
+  
+  // Hover handlers for auto-expand
+  const handleMouseEnter = () => {
+    if (!isMobile && collapsed) {
+      setOpen(true);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    if (!isMobile && !collapsed) {
+      setOpen(false);
+    }
+  };
   const [lastAudioPosition, setLastAudioPosition] = useState<string>("Ei viimeisintä");
   const [lastTextPosition, setLastTextPosition] = useState<string>("Ei viimeisintä");
   const [lastReadingData, setLastReadingData] = useState<any>(null);
@@ -147,6 +160,8 @@ export function AppSidebar({
     <Sidebar
       variant="floating"
       collapsible="icon"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Sidebar trigger and title at the top */}
       <div className="p-2 border-b border-border flex items-center gap-3">
