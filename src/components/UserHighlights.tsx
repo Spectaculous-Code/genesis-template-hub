@@ -151,7 +151,7 @@ const UserHighlights = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-foreground">Korostukseni</h2>
         <div className="text-sm text-muted-foreground">
-          {highlights.length} korostettu jae
+          {highlights.length} {highlights.length === 1 ? 'korostettu jae' : 'korostettua jaetta'}
         </div>
       </div>
 
