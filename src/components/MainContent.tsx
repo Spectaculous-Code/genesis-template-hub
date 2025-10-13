@@ -210,14 +210,24 @@ const MainContent = ({
       if (versionsResult.data) {
         setBibleVersions(versionsResult.data);
         
-        // Try to get version from localStorage first, otherwise use default
-        const savedVersion = localStorage.getItem('selectedBibleVersion');
+        // Prefer version from URL (?version=CODE), then localStorage, else first active
         let versionToUse = '';
+        const urlParams = new URLSearchParams(window.location.search);
+        const versionParam = urlParams.get('version');
+        if (versionParam) {
+          const matched = versionsResult.data.find(v => v.code.toLowerCase() === versionParam.toLowerCase());
+          if (matched) {
+            versionToUse = matched.id;
+          }
+        }
         
-        if (savedVersion && versionsResult.data.find(v => v.id === savedVersion)) {
-          versionToUse = savedVersion;
-        } else if (versionsResult.data.length > 0) {
-          versionToUse = versionsResult.data[0].id;
+        if (!versionToUse) {
+          const savedVersion = localStorage.getItem('selectedBibleVersion');
+          if (savedVersion && versionsResult.data.find(v => v.id === savedVersion)) {
+            versionToUse = savedVersion;
+          } else if (versionsResult.data.length > 0) {
+            versionToUse = versionsResult.data[0].id;
+          }
         }
         
         if (versionToUse) {
