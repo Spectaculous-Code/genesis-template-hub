@@ -178,26 +178,33 @@ const MainContent = ({
       }
 
       if (!saved?.success) {
-        if (saved?.error === 'Bookmark already exists') {
+        const errMsg = saved?.error || 'Tuntematon virhe';
+        if (errMsg === 'Bookmark already exists') {
           toast({
             title: "Kirjanmerkki on jo olemassa",
             description: `${getFinnishBookName(selectedBook)} ${selectedChapter}`,
-            variant: "default",
           });
-          return;
+        } else {
+          console.error('save_bookmark failed:', errMsg, saved);
+          toast({
+            title: "Virhe",
+            description: `Kirjanmerkin tallennus epäonnistui: ${errMsg}`,
+            variant: "destructive",
+          });
         }
-        throw new Error(saved?.error || 'Kirjanmerkin tallennus epäonnistui');
+        return;
       }
       
       toast({
         title: "Kirjanmerkki tallennettu",
         description: `${getFinnishBookName(selectedBook)} ${selectedChapter}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving bookmark:', error);
+      const errText = typeof error?.message === 'string' ? error.message : 'Tuntematon virhe';
       toast({
         title: "Virhe",
-        description: "Kirjanmerkin tallennus epäonnistui",
+        description: `Kirjanmerkin tallennus epäonnistui: ${errText}`,
         variant: "destructive"
       });
     }
