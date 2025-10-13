@@ -183,7 +183,7 @@ const UserReadingHistory = () => {
                     size="sm"
                     onClick={() => {
                       const bookName = bookmark.verse.chapter.book.name;
-                      window.location.href = `/?book=${encodeURIComponent(bookName)}&chapter=${bookmark.verse.chapter.chapter_number}&verse=${bookmark.verse.verse_number}`;
+                      window.location.href = `/?book=${encodeURIComponent(bookName)}&chapter=${bookmark.verse.chapter.chapter_number}&verse=${bookmark.verse.verse_number}&version=${bookmark.verse.version.code}`;
                     }}
                   >
                     Avaa jae
