@@ -65,7 +65,13 @@ export function AppSidebar({
   const [lastReadingData, setLastReadingData] = useState<any>(null);
   const [summariesCount, setSummariesCount] = useState(0);
   const [highlightsCount, setHighlightsCount] = useState(0);
-  const [latestBookmark, setLatestBookmark] = useState<{text: string, version: string} | null>(null);
+  const [latestBookmark, setLatestBookmark] = useState<{
+    text: string, 
+    version: string,
+    bookName: string,
+    chapter: number,
+    verse: number
+  } | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -138,7 +144,10 @@ export function AppSidebar({
         const bookName = getFinnishBookName(bookmark.book_name);
         setLatestBookmark({
           text: `${bookName} ${bookmark.chapter_number}:${bookmark.verse_number}`,
-          version: bookmark.version_code
+          version: bookmark.version_code,
+          bookName: bookmark.book_name,
+          chapter: bookmark.chapter_number,
+          verse: bookmark.verse_number
         });
       }
     };
@@ -221,7 +230,12 @@ export function AppSidebar({
                     </Link>
                   </SidebarMenuButton>
                   {!collapsed && latestBookmark && (
-                    <div className="ml-8 text-xs">
+                    <div 
+                      className="ml-8 text-xs cursor-pointer hover:underline"
+                      onClick={() => {
+                        window.location.href = `/?book=${encodeURIComponent(latestBookmark.bookName)}&chapter=${latestBookmark.chapter}&verse=${latestBookmark.verse}&version=${latestBookmark.version}`;
+                      }}
+                    >
                       {latestBookmark.text} <span className="text-muted-foreground">[{latestBookmark.version}] (viimeisin)</span>
                     </div>
                   )}
