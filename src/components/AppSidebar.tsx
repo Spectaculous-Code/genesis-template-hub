@@ -65,6 +65,7 @@ export function AppSidebar({
   const [lastReadingData, setLastReadingData] = useState<any>(null);
   const [summariesCount, setSummariesCount] = useState(0);
   const [highlightsCount, setHighlightsCount] = useState(0);
+  const [latestBookmark, setLatestBookmark] = useState<{text: string, version: string} | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -124,6 +125,22 @@ export function AppSidebar({
         .eq('user_id', user.id);
 
       setHighlightsCount(highlightsCountResult || 0);
+
+      // Fetch latest bookmark
+      const { data: bookmarkData } = await supabase
+        .rpc('get_user_bookmarks', {
+          p_user_id: user.id,
+          p_limit: 1
+        });
+
+      if (bookmarkData && bookmarkData.length > 0) {
+        const bookmark = bookmarkData[0];
+        const bookName = getFinnishBookName(bookmark.book_name);
+        setLatestBookmark({
+          text: `${bookName} ${bookmark.chapter_number}:${bookmark.verse_number}`,
+          version: bookmark.version_code
+        });
+      }
     };
 
     fetchUserData();
@@ -200,19 +217,12 @@ export function AppSidebar({
                   <SidebarMenuButton asChild>
                     <Link to="/profile?tab=kirjanmerkit">
                       <FileText className="h-4 w-4" />
-                      {!collapsed && <span>Kirjanmerkki</span>}
+                      {!collapsed && <span>Kirjanmerkit</span>}
                     </Link>
                   </SidebarMenuButton>
-                  {!collapsed && (
-                    <div 
-                      className={`ml-8 text-xs ${lastReadingData ? 'text-primary cursor-pointer hover:underline' : 'text-muted-foreground'}`}
-                      onClick={() => {
-                        if (lastReadingData) {
-                          onNavigateToContinueText(lastReadingData.book, lastReadingData.chapter);
-                        }
-                      }}
-                    >
-                      {lastTextPosition}
+                  {!collapsed && latestBookmark && (
+                    <div className="ml-8 text-xs">
+                      {latestBookmark.text} <span className="text-muted-foreground">[{latestBookmark.version}] (viimeisin)</span>
                     </div>
                   )}
                 </div>
