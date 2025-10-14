@@ -188,57 +188,7 @@ export type Database = {
           user_id?: string | null
           verse_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "bookmarks_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_mv"
-            referencedColumns: ["chapter_id"]
-          },
-          {
-            foreignKeyName: "bookmarks_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_user_v"
-            referencedColumns: ["chapter_id"]
-          },
-          {
-            foreignKeyName: "bookmarks_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapters"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bookmarks_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_mv"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "bookmarks_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_user_v"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "bookmarks_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "user_verse_counts_v"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "bookmarks_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "verses"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       books: {
         Row: {
@@ -1104,6 +1054,20 @@ export type Database = {
           osis: string
           plain_text: string
           tagged_text: string
+        }[]
+      }
+      get_user_bookmarks: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          book_name: string
+          chapter_number: number
+          created_at: string
+          id: string
+          verse_id: string
+          verse_number: number
+          verse_text: string
+          version_code: string
+          version_name: string
         }[]
       }
       get_user_highlights: {
