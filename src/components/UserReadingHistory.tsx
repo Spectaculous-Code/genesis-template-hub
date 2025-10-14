@@ -11,22 +11,13 @@ import { useToast } from '@/components/ui/use-toast';
 interface BookmarkItem {
   id: string;
   created_at: string;
-  verse: {
-    id: string;
-    verse_number: number;
-    text: string;
-    chapter: {
-      chapter_number: number;
-      book: {
-        name: string;
-        name_localized?: string;
-      };
-    };
-    version: {
-      code: string;
-      name: string;
-    };
-  };
+  verse_id: string;
+  verse_number: number;
+  verse_text: string;
+  chapter_number: number;
+  book_name: string;
+  version_code: string;
+  version_name: string;
 }
 
 const UserReadingHistory = () => {
@@ -46,30 +37,10 @@ const UserReadingHistory = () => {
 
     try {
       const { data, error } = await supabase
-        .from('bookmarks')
-        .select(`
-          id,
-          created_at,
-          verse:verse_id (
-            id,
-            verse_number,
-            text,
-            chapter:chapter_id (
-              chapter_number,
-              book:book_id (
-                name,
-                name_localized
-              )
-            ),
-            version:version_id (
-              code,
-              name
-            )
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .rpc('get_user_bookmarks', {
+          p_user_id: user.id,
+          p_limit: 50
+        });
 
       if (error) {
         console.error('Error fetching bookmarks:', error);
@@ -168,13 +139,13 @@ const UserReadingHistory = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="font-medium">
-                    {getFinnishBookName(bookmark.verse.chapter.book.name)} {bookmark.verse.chapter.chapter_number}:{bookmark.verse.verse_number}{' '}
+                    {getFinnishBookName(bookmark.book_name)} {bookmark.chapter_number}:{bookmark.verse_number}{' '}
                     <span className="text-xs text-muted-foreground">
-                      [{bookmark.verse.version.code}, {format(new Date(bookmark.created_at), 'dd.MM.yyyy')}]
+                      [{bookmark.version_code}, {format(new Date(bookmark.created_at), 'dd.MM.yyyy')}]
                     </span>
                   </h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {bookmark.verse.text}
+                    {bookmark.verse_text}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -182,8 +153,7 @@ const UserReadingHistory = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const bookName = bookmark.verse.chapter.book.name;
-                      window.location.href = `/?book=${encodeURIComponent(bookName)}&chapter=${bookmark.verse.chapter.chapter_number}&verse=${bookmark.verse.verse_number}&version=${bookmark.verse.version.code}`;
+                      window.location.href = `/?book=${encodeURIComponent(bookmark.book_name)}&chapter=${bookmark.chapter_number}&verse=${bookmark.verse_number}&version=${bookmark.version_code}`;
                     }}
                   >
                     Avaa jae
