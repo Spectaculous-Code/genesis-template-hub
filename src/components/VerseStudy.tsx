@@ -191,6 +191,11 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
             let wordText = current.word_text;
             const strongsNumbers: string[] = [];
             
+            // Include Strong's number on the current entry (covers punctuation-attached numbers)
+            if (current.strongs_number) {
+              strongsNumbers.push(current.strongs_number);
+            }
+            
             // Look ahead for Strong's numbers (entries with empty word_text)
             let j = i + 1;
             while (j < words.length && (!words[j].word_text || !words[j].word_text.trim()) && words[j].strongs_number) {
