@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, Book, Search as SearchIcon } from "lucide-react";
 import { SearchResult } from "@/lib/searchService";
-import { getFinnishBookName } from "@/lib/bookNameMapping";
+import { getFinnishBookName, getBookOrder } from "@/lib/bookNameMapping";
 
 interface SearchResultsProps {
   results: SearchResult | null;
@@ -14,6 +14,16 @@ interface SearchResultsProps {
 
 const SearchResults = ({ results, onClose, onNavigateToVerse, isLoading, versionCode }: SearchResultsProps) => {
   if (!results && !isLoading) return null;
+
+  // Sort verses by Bible book order, then chapter, then verse
+  const sortedVerses = results?.verses ? [...results.verses].sort((a, b) => {
+    const orderA = getBookOrder(a.book_name);
+    const orderB = getBookOrder(b.book_name);
+    
+    if (orderA !== orderB) return orderA - orderB;
+    if (a.chapter_number !== b.chapter_number) return a.chapter_number - b.chapter_number;
+    return a.verse_number - b.verse_number;
+  }) : [];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[70] flex items-start justify-center pt-20">
@@ -44,9 +54,9 @@ const SearchResults = ({ results, onClose, onNavigateToVerse, isLoading, version
             <div className="text-center py-8 text-muted-foreground">
               Ladataan hakutuloksia...
             </div>
-          ) : results?.verses && results.verses.length > 0 ? (
+          ) : sortedVerses.length > 0 ? (
             <div className="space-y-4">
-              {results.verses.map((verse) => (
+              {sortedVerses.map((verse) => (
                 <Card 
                   key={verse.verse_id} 
                   className="p-4 cursor-pointer hover:bg-accent transition-colors"
