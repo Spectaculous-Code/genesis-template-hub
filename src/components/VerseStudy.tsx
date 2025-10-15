@@ -178,29 +178,13 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
       console.log('Strong\'s words for debug:', words);
       console.log('KJV verse text for debug:', kjvVerseData.text);
       
-      // Filter out words that contain extraneous content that doesn't belong to the verse
-      const filteredWords = words.filter(word => {
-        const wordText = word.word_text?.toLowerCase() || '';
-        // Filter out obvious extraneous content
-        const isExtraneous = wordText.includes('david') || 
-                            wordText.includes('psalm') || 
-                            wordText.includes('praise') ||
-                            (wordText.startsWith('<') && wordText.endsWith('>')); // Filter out standalone Strong's references
-        return !isExtraneous;
-      });
-      
-      // Split the original KJV text into words to compare length and detect extra words
-      const originalWords = kjvVerseData.text.split(/\s+/).filter(w => w.length > 0);
-      
-      // Use filtered words but limit to the length of original text to avoid extra words
+      // Construct tagged text directly from all Strong's words
       let taggedText;
-      if (filteredWords.length > 0) {
-        // Only use words up to the original verse length to avoid extra content
-        const relevantWords = filteredWords.slice(0, originalWords.length);
-        taggedText = relevantWords
+      if (words.length > 0) {
+        taggedText = words
           .map(word => {
             if (word.strongs_number) {
-              return `${word.word_text}<${word.strongs_number}>`;
+              return `${word.word_text} <${word.strongs_number}>`;
             }
             return word.word_text;
           })
