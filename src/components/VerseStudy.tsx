@@ -178,17 +178,51 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
       console.log('Strong\'s words for debug:', words);
       console.log('KJV verse text for debug:', kjvVerseData.text);
       
-      // Construct tagged text directly from all Strong's words
+      // Construct tagged text by pairing words with their Strong's numbers
       let taggedText;
       if (words.length > 0) {
-        taggedText = words
-          .map(word => {
-            if (word.strongs_number) {
-              return `${word.word_text} <${word.strongs_number}>`;
+        const result: string[] = [];
+        
+        for (let i = 0; i < words.length; i++) {
+          const current = words[i];
+          
+          // If current entry has word_text (not empty)
+          if (current.word_text && current.word_text.trim()) {
+            let wordText = current.word_text;
+            const strongsNumbers: string[] = [];
+            
+            // Look ahead for Strong's numbers (entries with empty word_text)
+            let j = i + 1;
+            while (j < words.length && (!words[j].word_text || !words[j].word_text.trim()) && words[j].strongs_number) {
+              strongsNumbers.push(words[j].strongs_number);
+              j++;
             }
-            return word.word_text;
-          })
-          .join(' ');
+            
+            // Skip the Strong's number entries we just processed
+            i = j - 1;
+            
+            // Build the tagged word
+            if (strongsNumbers.length > 0) {
+              // Check if this is punctuation
+              const isPunctuation = /^[.,;:!?'")\]}]+$/.test(wordText.trim());
+              
+              if (isPunctuation && result.length > 0) {
+                // Attach Strong's numbers to the previous word instead of punctuation
+                const lastIndex = result.length - 1;
+                const strongsTags = strongsNumbers.map(num => ` <${num}>`).join('');
+                result[lastIndex] = result[lastIndex] + strongsTags;
+                result.push(wordText);
+              } else {
+                const strongsTags = strongsNumbers.map(num => ` <${num}>`).join('');
+                result.push(wordText + strongsTags);
+              }
+            } else {
+              result.push(wordText);
+            }
+          }
+        }
+        
+        taggedText = result.join(' ');
       } else {
         // Fallback: use the original KJV text
         taggedText = kjvVerseData.text;
