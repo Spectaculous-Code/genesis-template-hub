@@ -3,10 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark } from "lucide-react";
 import BibleReader from "./BibleReader";
-import SearchResults from "./SearchResults";
 import UserSummaries from "./UserSummaries";
 import UserHighlights from "./UserHighlights";
-import { performSearch, SearchResult } from "@/lib/searchService";
 import { getBibleBooks, BibleBook } from "@/lib/bibleService";
 import { getFinnishBookName, getEnglishBookName } from "@/lib/bookNameMapping";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useEffect } from "react";
 import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface BibleVersion {
   id: string;
@@ -53,13 +52,12 @@ const MainContent = ({
   const [bibleVersions, setBibleVersions] = useState<BibleVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [isFromLatestPosition, setIsFromLatestPosition] = useState(false);
   const [hasManuallyNavigated, setHasManuallyNavigated] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const { latestPosition, loading: positionLoading, refetch: refetchLatestPosition } = useLatestReadingPosition();
+  const navigate = useNavigate();
 
   // Wrapper functions to reset isFromLatestPosition when user manually navigates
   const handleBookSelect = async (bookName: string) => {
@@ -302,21 +300,8 @@ const MainContent = ({
   const handleSearch = async (query: string) => {
     if (!query.trim()) return;
 
-    setIsSearching(true);
-    try {
-      const versionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
-      const results = await performSearch(query, versionCode);
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Search error:', error);
-      toast({
-        title: "Hakuvirhe",
-        description: "Haku epäonnistui, yritä uudelleen",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSearching(false);
-    }
+    const versionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
+    navigate(`/search?q=${encodeURIComponent(query)}&v=${versionCode}`);
   };
 
   const handleNavigateToVerse = (bookName: string, chapter: number, verse?: number, text?: string) => {
@@ -341,20 +326,6 @@ const MainContent = ({
 
   const renderContent = () => {
     switch (currentView) {
-      case 'search':
-        return (
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Hakutulokset</h2>
-            <SearchResults
-              results={searchResults}
-              onClose={() => setSearchResults(null)}
-              onNavigateToVerse={handleNavigateToVerse}
-              isLoading={isSearching}
-              versionCode={bibleVersions.find(v => v.id === selectedVersion)?.code}
-            />
-          </div>
-        );
-      
       case 'summaries':
         return <UserSummaries />;
       

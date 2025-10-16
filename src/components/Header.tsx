@@ -6,10 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Search, ChevronDown, Menu as MenuIcon } from "lucide-react";
 import { getBibleBooks, getBookChapters, BibleBook } from "@/lib/bibleService";
-import { performSearch, SearchResult } from "@/lib/searchService";
 import { supabase } from "@/integrations/supabase/client";
-import SearchResults from "./SearchResults";
-import { useToast } from "@/components/ui/use-toast";
 
 interface BibleVersion {
   id: string;
@@ -32,9 +29,6 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
   const [chaptersCount, setChaptersCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -71,43 +65,18 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
 
   const chapters = Array.from({ length: chaptersCount }, (_, i) => i + 1);
 
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults(null);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const versionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
-      const results = await performSearch(query, versionCode);
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Search error:', error);
-      toast({
-        title: "Hakuvirhe",
-        description: "Haku epäonnistui, yritä uudelleen",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSearching(false);
-    }
+  const handleSearch = (query: string) => {
+    if (!query.trim()) return;
+    
+    const versionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
+    navigate(`/search?q=${encodeURIComponent(query)}&v=${versionCode}`);
+    setSearchQuery("");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch(searchQuery);
     }
-  };
-
-  const handleNavigateToVerse = (bookName: string, chapter: number, verse?: number) => {
-    onVerseNavigation(bookName, chapter, verse);
-    setSearchResults(null);
-    setSearchQuery("");
-    toast({
-      title: "Siirretty",
-      description: `${bookName} ${chapter}${verse ? `:${verse}` : ''}`,
-    });
   };
 
   return (
@@ -189,7 +158,6 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
                 size="sm"
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
                 onClick={() => handleSearch(searchQuery)}
-                disabled={isSearching}
               >
                 <Search className="h-3 w-3" />
               </Button>
@@ -218,18 +186,6 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      
-      {/* Search Results */}
-      <SearchResults
-        results={searchResults}
-        onClose={() => {
-          setSearchResults(null);
-          setSearchQuery("");
-        }}
-        onNavigateToVerse={handleNavigateToVerse}
-        isLoading={isSearching}
-        versionCode={bibleVersions.find(v => v.id === selectedVersion)?.code}
-      />
     </header>
   );
 };
