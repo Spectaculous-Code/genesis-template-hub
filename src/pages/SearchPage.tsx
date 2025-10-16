@@ -74,6 +74,13 @@ const SearchPage = () => {
     return a.verse_number - b.verse_number;
   }) : [];
 
+  // Filter extended results to show only new verses not in the original results
+  const newExtendedVerses = extendedResults?.verses 
+    ? extendedResults.verses.filter(extVerse => 
+        !sortedVerses.some(origVerse => origVerse.verse_id === extVerse.verse_id)
+      )
+    : [];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -186,11 +193,11 @@ const SearchPage = () => {
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="h-5 w-5 text-primary" />
                   <h2 className="text-lg font-semibold">
-                    Laajennettu haku (yhdyssanat) - {extendedResults.verses?.length || 0} tulosta
+                    Laajennettu haku (uudet tulokset) - {newExtendedVerses.length} tulosta
                   </h2>
                 </div>
-                {extendedResults.verses && extendedResults.verses.length > 0 ? (
-                  extendedResults.verses
+                {newExtendedVerses.length > 0 ? (
+                  newExtendedVerses
                     .sort((a, b) => {
                       const orderA = getBookOrder(a.book_name);
                       const orderB = getBookOrder(b.book_name);
