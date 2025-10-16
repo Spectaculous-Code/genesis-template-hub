@@ -3,9 +3,9 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search as SearchIcon, Book, ArrowLeft } from "lucide-react";
+import { Search as SearchIcon, Book, ArrowLeft, Sparkles } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { performSearch, SearchResult } from "@/lib/searchService";
+import { performSearch, SearchResult, searchText } from "@/lib/searchService";
 import { getFinnishBookName, getBookOrder } from "@/lib/bookNameMapping";
 
 const SearchPage = () => {
@@ -16,6 +16,8 @@ const SearchPage = () => {
   const [results, setResults] = useState<SearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedVerse, setSelectedVerse] = useState<any>(null);
+  const [extendedResults, setExtendedResults] = useState<SearchResult | null>(null);
+  const [isLoadingExtended, setIsLoadingExtended] = useState(false);
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -31,6 +33,7 @@ const SearchPage = () => {
     if (!searchQuery.trim()) return;
     
     setIsLoading(true);
+    setExtendedResults(null);
     try {
       const result = await performSearch(searchQuery, version);
       setResults(result);
@@ -38,6 +41,20 @@ const SearchPage = () => {
       console.error("Search error:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleExtendedSearch = async () => {
+    if (!query.trim()) return;
+    
+    setIsLoadingExtended(true);
+    try {
+      const result = await searchText(query, versionCode);
+      setExtendedResults(result);
+    } catch (error) {
+      console.error("Extended search error:", error);
+    } finally {
+      setIsLoadingExtended(false);
     }
   };
 
@@ -96,18 +113,31 @@ const SearchPage = () => {
               </div>
             ) : sortedVerses.length > 0 ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  {results?.type === 'reference' ? (
-                    <Book className="h-5 w-5 text-primary" />
-                  ) : (
-                    <SearchIcon className="h-5 w-5 text-primary" />
+                <div className="flex items-center gap-2 mb-4 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    {results?.type === 'reference' ? (
+                      <Book className="h-5 w-5 text-primary" />
+                    ) : (
+                      <SearchIcon className="h-5 w-5 text-primary" />
+                    )}
+                    <h2 className="text-lg font-semibold">
+                      {results?.type === 'reference' 
+                        ? `Raamatunviittaus (${versionCode})` 
+                        : `Tekstihaku (${versionCode})`}
+                      {' - '}{sortedVerses.length} tulosta
+                    </h2>
+                  </div>
+                  {results?.type === 'text' && (
+                    <Button 
+                      onClick={handleExtendedSearch}
+                      variant="outline"
+                      size="sm"
+                      disabled={isLoadingExtended}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      {isLoadingExtended ? 'Haetaan...' : 'Laajennettu haku'}
+                    </Button>
                   )}
-                  <h2 className="text-lg font-semibold">
-                    {results?.type === 'reference' 
-                      ? `Raamatunviittaus (${versionCode})` 
-                      : `Tekstihaku (${versionCode})`}
-                    {' - '}{sortedVerses.length} tulosta
-                  </h2>
                 </div>
 
                 {sortedVerses.map((verse) => (
@@ -148,10 +178,47 @@ const SearchPage = () => {
 
         <ResizableHandle withHandle />
 
-        {/* Right Panel - Details */}
+        {/* Right Panel - Extended Search Results or Details */}
         <ResizablePanel defaultSize={50} minSize={30}>
           <div className="h-full overflow-y-auto p-4 bg-muted/30">
-            {selectedVerse ? (
+            {extendedResults ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">
+                    Laajennettu haku (yhdyssanat) - {extendedResults.verses?.length || 0} tulosta
+                  </h2>
+                </div>
+                {extendedResults.verses && extendedResults.verses.length > 0 ? (
+                  extendedResults.verses
+                    .sort((a, b) => {
+                      const orderA = getBookOrder(a.book_name);
+                      const orderB = getBookOrder(b.book_name);
+                      if (orderA !== orderB) return orderA - orderB;
+                      if (a.chapter_number !== b.chapter_number) return a.chapter_number - b.chapter_number;
+                      return a.verse_number - b.verse_number;
+                    })
+                    .map((verse) => (
+                      <Card 
+                        key={verse.verse_id} 
+                        className="p-4 cursor-pointer hover:bg-accent transition-colors"
+                        onClick={() => navigate(`/study/${verse.book_name}/${verse.chapter_number}/${verse.verse_number}`)}
+                      >
+                        <div className="text-sm text-muted-foreground mb-2">
+                          {versionCode?.startsWith('fin') ? getFinnishBookName(verse.book_name) : verse.book_name} {verse.chapter_number}:{verse.verse_number}
+                        </div>
+                        <div className="text-base leading-relaxed">
+                          {verse.text_content}
+                        </div>
+                      </Card>
+                    ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Ei tuloksia laajennetussa haussa
+                  </div>
+                )}
+              </div>
+            ) : selectedVerse ? (
               <Card className="p-6">
                 <h3 className="text-xl font-bold mb-4">
                   {versionCode?.startsWith('fin') ? getFinnishBookName(selectedVerse.book_name) : selectedVerse.book_name} {selectedVerse.chapter_number}:{selectedVerse.verse_number}
