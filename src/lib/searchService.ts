@@ -145,7 +145,7 @@ export async function searchTextExtended(searchTerm: string, versionCode?: strin
 
   try {
     // Using direct query with ILIKE to find partial matches including compound words
-    const { data, error } = await supabase
+    const { data, error } = await supabase.schema('bible_schema')
       .from('verses')
       .select(`
         id,
