@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search as SearchIcon, Book, ArrowLeft, Sparkles } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { performSearch, SearchResult, searchText } from "@/lib/searchService";
+import { performSearch, SearchResult, searchTextExtended } from "@/lib/searchService";
 import { getFinnishBookName, getBookOrder } from "@/lib/bookNameMapping";
 
 const SearchPage = () => {
@@ -49,7 +49,7 @@ const SearchPage = () => {
     
     setIsLoadingExtended(true);
     try {
-      const result = await searchText(query, versionCode);
+      const result = await searchTextExtended(query, versionCode);
       setExtendedResults(result);
     } catch (error) {
       console.error("Extended search error:", error);

@@ -100,7 +100,7 @@ export async function searchReference(reference: SearchResult['reference'], vers
   }
 }
 
-// Search for text using RPC function
+// Search for text using RPC function (full-text search)
 export async function searchText(searchTerm: string, versionCode?: string): Promise<SearchResult> {
   if (!searchTerm.trim()) {
     return { type: 'text', verses: [] };
@@ -133,6 +133,58 @@ export async function searchText(searchTerm: string, versionCode?: string): Prom
     };
   } catch (error) {
     console.error('Text search error:', error);
+    return { type: 'text', verses: [] };
+  }
+}
+
+// Extended search using ILIKE for compound words (e.g., "yhdeksän" finds "yhdeksänsataa")
+export async function searchTextExtended(searchTerm: string, versionCode?: string): Promise<SearchResult> {
+  if (!searchTerm.trim()) {
+    return { type: 'text', verses: [] };
+  }
+
+  try {
+    // Using direct query with ILIKE to find partial matches including compound words
+    const { data, error } = await supabase
+      .from('verses')
+      .select(`
+        id,
+        text,
+        verse_number,
+        chapter:chapters!inner(
+          chapter_number,
+          book:books!inner(
+            name
+          )
+        ),
+        verse_key:verse_keys(osis),
+        version:bible_versions!inner(code)
+      `)
+      .ilike('text', `%${searchTerm}%`)
+      .eq('bible_versions.code', versionCode || 'finstlk201')
+      .eq('is_superseded', false)
+      .limit(100);
+
+    if (error) {
+      console.error('Extended text search error:', error);
+      return { type: 'text', verses: [] };
+    }
+
+    const verses = (data || []).map((verse: any) => ({
+      verse_id: verse.id,
+      text_content: verse.text,
+      verse_number: verse.verse_number,
+      chapter_number: verse.chapter?.chapter_number,
+      book_name: verse.chapter?.book?.name,
+      osis: verse.verse_key?.osis || ''
+    }));
+
+    return {
+      type: 'text',
+      verses
+    };
+  } catch (error) {
+    console.error('Extended text search error:', error);
     return { type: 'text', verses: [] };
   }
 }
