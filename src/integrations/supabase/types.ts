@@ -1156,6 +1156,18 @@ export type Database = {
           version_code: string
         }[]
       }
+      search_text_extended: {
+        Args: { p_limit?: number; p_query: string; p_version_code?: string }
+        Returns: {
+          book_name: string
+          chapter_number: number
+          osis: string
+          text_content: string
+          verse_id: string
+          verse_number: number
+          version_code: string
+        }[]
+      }
     }
     Enums: {
       history_t: "read" | "listen"

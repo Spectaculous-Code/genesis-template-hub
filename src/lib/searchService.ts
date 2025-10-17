@@ -144,26 +144,12 @@ export async function searchTextExtended(searchTerm: string, versionCode?: strin
   }
 
   try {
-    // Using direct query with ILIKE to find partial matches including compound words
-    const { data, error } = await supabase.schema('bible_schema')
-      .from('verses')
-      .select(`
-        id,
-        text,
-        verse_number,
-        chapter:chapters!inner(
-          chapter_number,
-          book:books!inner(
-            name
-          )
-        ),
-        verse_key:verse_keys(osis),
-        version:bible_versions!inner(code)
-      `)
-      .ilike('text', `%${searchTerm}%`)
-      .eq('bible_versions.code', versionCode || 'finstlk201')
-      .eq('is_superseded', false)
-      .limit(100);
+    // Using the new RPC function for ILIKE-based search
+    const { data, error } = await (supabase.rpc as any)('search_text_extended', {
+      p_query: searchTerm,
+      p_version_code: versionCode || 'finstlk201',
+      p_limit: 100
+    });
 
     if (error) {
       console.error('Extended text search error:', error);
@@ -171,12 +157,12 @@ export async function searchTextExtended(searchTerm: string, versionCode?: strin
     }
 
     const verses = (data || []).map((verse: any) => ({
-      verse_id: verse.id,
-      text_content: verse.text,
+      verse_id: verse.verse_id,
+      text_content: verse.text_content,
       verse_number: verse.verse_number,
-      chapter_number: verse.chapter?.chapter_number,
-      book_name: verse.chapter?.book?.name,
-      osis: verse.verse_key?.osis || ''
+      chapter_number: verse.chapter_number,
+      book_name: verse.book_name,
+      osis: verse.osis
     }));
 
     return {
