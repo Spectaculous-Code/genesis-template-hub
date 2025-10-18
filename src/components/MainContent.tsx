@@ -32,6 +32,7 @@ interface MainContentProps {
   searchQuery?: string;
   isAppTitleNavigation?: boolean;
   onNavigationComplete?: () => void;
+  onVersionChange?: (versionCode: string) => void;
 }
 
 const MainContent = ({
@@ -45,7 +46,8 @@ const MainContent = ({
   currentView,
   searchQuery = "",
   isAppTitleNavigation = false,
-  onNavigationComplete
+  onNavigationComplete,
+  onVersionChange
 }: MainContentProps) => {
   console.log('MainContent render - isAppTitleNavigation:', isAppTitleNavigation);
   const [bibleBooks, setBibleBooks] = useState<BibleBook[]>([]);
@@ -238,6 +240,11 @@ const MainContent = ({
         if (versionToUse) {
           setSelectedVersion(versionToUse);
           localStorage.setItem('selectedBibleVersion', versionToUse);
+          // Notify parent of version code
+          const versionCode = versionsResult.data.find(v => v.id === versionToUse)?.code;
+          if (versionCode && onVersionChange) {
+            onVersionChange(versionCode);
+          }
         }
       }
     };
@@ -293,16 +300,9 @@ const MainContent = ({
 
   useEffect(() => {
     if (currentView === 'search' && searchQuery) {
-      handleSearch(searchQuery);
+      // Search is now handled in Index.tsx
     }
   }, [currentView, searchQuery, selectedVersion]);
-
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) return;
-
-    const versionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
-    navigate(`/search?q=${encodeURIComponent(query)}&v=${versionCode}`);
-  };
 
   const handleNavigateToVerse = (bookName: string, chapter: number, verse?: number, text?: string) => {
     onNavigateToVerse(bookName, chapter, verse);
@@ -395,7 +395,15 @@ const MainContent = ({
               </Select>
 
               {/* Version Selection */}
-              <Select value={selectedVersion} onValueChange={(value) => { setSelectedVersion(value); localStorage.setItem('selectedBibleVersion', value); }}>
+              <Select value={selectedVersion} onValueChange={(value) => { 
+                setSelectedVersion(value); 
+                localStorage.setItem('selectedBibleVersion', value);
+                // Notify parent of version code change
+                const versionCode = bibleVersions.find(v => v.id === value)?.code;
+                if (versionCode && onVersionChange) {
+                  onVersionChange(versionCode);
+                }
+              }}>
                 <SelectTrigger className="w-[100px]">
                   <SelectValue placeholder="Versio" />
                 </SelectTrigger>
