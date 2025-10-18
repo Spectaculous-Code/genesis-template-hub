@@ -73,51 +73,53 @@ export function SearchSidebar({
         <SidebarTrigger />
       </div>
       
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <div className="px-3 space-y-3">
-              {isLoading ? (
-                <div className="text-center py-8 text-sm text-muted-foreground">
-                  Ladataan...
-                </div>
-              ) : allResults.length > 0 ? (
-                <>
-                  {allResults.map((verse) => (
-                    <Card 
-                      key={`${verse.verse_id}-${verse.isExtended}`}
-                      className="p-3 cursor-pointer hover:bg-accent transition-colors"
-                      onClick={() => onVerseClick(verse)}
-                    >
-                      <div className="flex items-start gap-2">
-                        {verse.isExtended ? (
-                          <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                        ) : (
-                          <SearchIcon className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs text-muted-foreground mb-1.5 font-medium">
-                            {versionCode?.startsWith('fin') 
-                              ? getFinnishBookName(verse.book_name) 
-                              : verse.book_name} {verse.chapter_number}:{verse.verse_number}
-                          </div>
-                          <div className="text-sm leading-relaxed">
-                            {verse.text_content}
+      {!collapsed && (
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <div className="px-3 space-y-3">
+                {isLoading ? (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    Ladataan...
+                  </div>
+                ) : allResults.length > 0 ? (
+                  <>
+                    {allResults.map((verse) => (
+                      <Card 
+                        key={`${verse.verse_id}-${verse.isExtended}`}
+                        className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                        onClick={() => onVerseClick(verse)}
+                      >
+                        <div className="flex items-start gap-2">
+                          {verse.isExtended ? (
+                            <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                          ) : (
+                            <SearchIcon className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-muted-foreground mb-1.5 font-medium">
+                              {versionCode?.startsWith('fin') 
+                                ? getFinnishBookName(verse.book_name) 
+                                : verse.book_name} {verse.chapter_number}:{verse.verse_number}
+                            </div>
+                            <div className="text-sm leading-relaxed">
+                              {verse.text_content}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
-                </>
-              ) : (
-                <div className="text-center py-8 text-sm text-muted-foreground">
-                  Ei hakutuloksia
-                </div>
-              )}
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+                      </Card>
+                    ))}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    Ei hakutuloksia
+                  </div>
+                )}
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      )}
     </Sidebar>
   );
 }
