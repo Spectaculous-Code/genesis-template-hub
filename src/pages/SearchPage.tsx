@@ -99,8 +99,10 @@ const SearchPage = () => {
     : [];
 
   const handleVerseClick = (verse: any) => {
+    // Close sidebar but keep it available on the right
     setSidebarOpen(false);
-    navigate(`/study/${verse.book_name}/${verse.chapter_number}/${verse.verse_number}`);
+    // Navigate to the main reading view with the verse
+    navigate(`/?book=${encodeURIComponent(verse.book_name)}&chapter=${verse.chapter_number}&verse=${verse.verse_number}&version=${versionCode}`);
   };
 
   return (
