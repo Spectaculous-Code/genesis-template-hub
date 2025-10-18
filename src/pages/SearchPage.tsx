@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search as SearchIcon, Book, ArrowLeft, Sparkles } from "lucide-react";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Search as SearchIcon, ArrowLeft, Sparkles } from "lucide-react";
 import { performSearch, SearchResult, searchTextExtended } from "@/lib/searchService";
-import { getFinnishBookName, getBookOrder } from "@/lib/bookNameMapping";
+import { getBookOrder } from "@/lib/bookNameMapping";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SearchSidebar } from "@/components/SearchSidebar";
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
@@ -15,9 +15,9 @@ const SearchPage = () => {
   const [versionCode, setVersionCode] = useState(searchParams.get("v") || "finstlk201");
   const [results, setResults] = useState<SearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedVerse, setSelectedVerse] = useState<any>(null);
   const [extendedResults, setExtendedResults] = useState<SearchResult | null>(null);
   const [isLoadingExtended, setIsLoadingExtended] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -34,9 +34,18 @@ const SearchPage = () => {
     
     setIsLoading(true);
     setExtendedResults(null);
+    setSidebarOpen(false);
     try {
       const result = await performSearch(searchQuery, version);
       setResults(result);
+      // Open sidebar if we have results
+      if (result.verses && result.verses.length > 0) {
+        setSidebarOpen(true);
+      }
+      // Auto-trigger extended search for text searches
+      if (result.type === 'text') {
+        handleExtendedSearch(searchQuery, version);
+      }
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -44,12 +53,14 @@ const SearchPage = () => {
     }
   };
 
-  const handleExtendedSearch = async () => {
-    if (!query.trim()) return;
+  const handleExtendedSearch = async (searchQuery?: string, version?: string) => {
+    const q = searchQuery || query;
+    const v = version || versionCode;
+    if (!q.trim()) return;
     
     setIsLoadingExtended(true);
     try {
-      const result = await searchTextExtended(query, versionCode);
+      const result = await searchTextExtended(q, v);
       setExtendedResults(result);
     } catch (error) {
       console.error("Extended search error:", error);
@@ -78,178 +89,99 @@ const SearchPage = () => {
   const newExtendedVerses = extendedResults?.verses 
     ? extendedResults.verses.filter(extVerse => 
         !sortedVerses.some(origVerse => origVerse.verse_id === extVerse.verse_id)
-      )
+      ).sort((a, b) => {
+        const orderA = getBookOrder(a.book_name);
+        const orderB = getBookOrder(b.book_name);
+        if (orderA !== orderB) return orderA - orderB;
+        if (a.chapter_number !== b.chapter_number) return a.chapter_number - b.chapter_number;
+        return a.verse_number - b.verse_number;
+      })
     : [];
 
+  const handleVerseClick = (verse: any) => {
+    setSidebarOpen(false);
+    navigate(`/study/${verse.book_name}/${verse.chapter_number}/${verse.verse_number}`);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4 mb-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-2xl font-bold">Hakutulokset</h1>
-          </div>
-          
-          <form onSubmit={handleSearchSubmit} className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Hae Raamatusta..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="flex-1"
-            />
-            <Button type="submit">
-              <SearchIcon className="h-4 w-4 mr-2" />
-              Hae
-            </Button>
-          </form>
-        </div>
-      </header>
-
-      {/* Content */}
-      <ResizablePanelGroup direction="horizontal" className="min-h-[calc(100vh-140px)]">
-        {/* Left Panel - Search Results */}
-        <ResizablePanel defaultSize={50} minSize={30}>
-          <div className="h-full overflow-y-auto p-4">
-            {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Ladataan hakutuloksia...
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <div className="min-h-screen bg-background w-full flex">
+        <SidebarInset className="flex-1">
+          <header className="border-b bg-card sticky top-0 z-10">
+            <div className="container mx-auto px-4 py-4">
+              <div className="flex items-center gap-4 mb-4">
+                <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <h1 className="text-2xl font-bold">Hakutulokset</h1>
               </div>
-            ) : sortedVerses.length > 0 ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    {results?.type === 'reference' ? (
-                      <Book className="h-5 w-5 text-primary" />
-                    ) : (
-                      <SearchIcon className="h-5 w-5 text-primary" />
-                    )}
-                    <h2 className="text-lg font-semibold">
-                      {results?.type === 'reference' 
-                        ? `Raamatunviittaus (${versionCode})` 
-                        : `Tekstihaku (${versionCode})`}
-                      {' - '}{sortedVerses.length} tulosta
-                    </h2>
-                  </div>
-                  {results?.type === 'text' && (
-                    <Button 
-                      onClick={handleExtendedSearch}
-                      variant="outline"
-                      size="sm"
-                      disabled={isLoadingExtended}
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      {isLoadingExtended ? 'Haetaan...' : 'Laajennettu haku'}
-                    </Button>
-                  )}
-                </div>
-
-                {sortedVerses.map((verse) => (
-                  <Card 
-                    key={verse.verse_id} 
-                    className={`p-4 cursor-pointer hover:bg-accent transition-colors ${
-                      selectedVerse?.verse_id === verse.verse_id ? 'ring-2 ring-primary' : ''
-                    }`}
-                    onClick={() => setSelectedVerse(verse)}
-                  >
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <div className="text-sm text-muted-foreground mb-2">
-                          {versionCode?.startsWith('fin') ? getFinnishBookName(verse.book_name) : verse.book_name} {verse.chapter_number}:{verse.verse_number}
-                        </div>
-                        <div className="text-base leading-relaxed">
-                          {verse.text_content}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            ) : query ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {results?.type === 'reference' 
-                  ? 'Raamatunviitettä ei löytynyt'
-                  : 'Ei hakutuloksia'
-                }
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                Syötä hakusana aloittaaksesi haun
-              </div>
-            )}
-          </div>
-        </ResizablePanel>
-
-        <ResizableHandle withHandle />
-
-        {/* Right Panel - Extended Search Results or Details */}
-        <ResizablePanel defaultSize={50} minSize={30}>
-          <div className="h-full overflow-y-auto p-4 bg-muted/30">
-            {extendedResults ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">
-                    Laajennettu haku (uudet tulokset) - {newExtendedVerses.length} tulosta
-                  </h2>
-                </div>
-                {newExtendedVerses.length > 0 ? (
-                  newExtendedVerses
-                    .sort((a, b) => {
-                      const orderA = getBookOrder(a.book_name);
-                      const orderB = getBookOrder(b.book_name);
-                      if (orderA !== orderB) return orderA - orderB;
-                      if (a.chapter_number !== b.chapter_number) return a.chapter_number - b.chapter_number;
-                      return a.verse_number - b.verse_number;
-                    })
-                    .map((verse) => (
-                      <Card 
-                        key={verse.verse_id} 
-                        className="p-4 cursor-pointer hover:bg-accent transition-colors"
-                        onClick={() => navigate(`/study/${verse.book_name}/${verse.chapter_number}/${verse.verse_number}`)}
-                      >
-                        <div className="text-sm text-muted-foreground mb-2">
-                          {versionCode?.startsWith('fin') ? getFinnishBookName(verse.book_name) : verse.book_name} {verse.chapter_number}:{verse.verse_number}
-                        </div>
-                        <div className="text-base leading-relaxed">
-                          {verse.text_content}
-                        </div>
-                      </Card>
-                    ))
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Ei tuloksia laajennetussa haussa
-                  </div>
-                )}
-              </div>
-            ) : selectedVerse ? (
-              <Card className="p-6">
-                <h3 className="text-xl font-bold mb-4">
-                  {versionCode?.startsWith('fin') ? getFinnishBookName(selectedVerse.book_name) : selectedVerse.book_name} {selectedVerse.chapter_number}:{selectedVerse.verse_number}
-                </h3>
-                <p className="text-lg leading-relaxed mb-6">
-                  {selectedVerse.text_content}
-                </p>
-                <div className="flex gap-2">
+              
+              <form onSubmit={handleSearchSubmit} className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Hae Raamatusta..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit">
+                  <SearchIcon className="h-4 w-4 mr-2" />
+                  Hae
+                </Button>
+                {results?.type === 'text' && sortedVerses.length > 0 && (
                   <Button 
-                    onClick={() => navigate(`/study/${selectedVerse.book_name}/${selectedVerse.chapter_number}/${selectedVerse.verse_number}`)}
+                    onClick={() => handleExtendedSearch()}
+                    variant="outline"
+                    disabled={isLoadingExtended}
                   >
-                    Avaa tutkimussivulla
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {isLoadingExtended ? 'Haetaan...' : 'Laajennettu'}
                   </Button>
-                </div>
-              </Card>
+                )}
+              </form>
+            </div>
+          </header>
+
+          <main className="p-6">
+            {!query ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <SearchIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg">Syötä hakusana aloittaaksesi haun</p>
+              </div>
+            ) : isLoading ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+                <p>Ladataan hakutuloksia...</p>
+              </div>
+            ) : sortedVerses.length === 0 && newExtendedVerses.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <p className="text-lg">
+                  {results?.type === 'reference' 
+                    ? 'Raamatunviitettä ei löytynyt'
+                    : 'Ei hakutuloksia'
+                  }
+                </p>
+              </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Valitse jae vasemmalta nähdäksesi lisätietoja
+              <div className="max-w-4xl mx-auto">
+                <p className="text-muted-foreground mb-6">
+                  Löytyi {sortedVerses.length + newExtendedVerses.length} tulosta. 
+                  Klikkaa sivupalkin kuvaketta nähdäksesi tulokset.
+                </p>
               </div>
             )}
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
+          </main>
+        </SidebarInset>
+
+        <SearchSidebar 
+          results={sortedVerses}
+          extendedResults={newExtendedVerses}
+          versionCode={versionCode}
+          onVerseClick={handleVerseClick}
+          isLoading={isLoading || isLoadingExtended}
+        />
+      </div>
+    </SidebarProvider>
   );
 };
 
