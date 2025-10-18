@@ -34,7 +34,7 @@ export function SearchSidebar({
   onVerseClick,
   isLoading 
 }: SearchSidebarProps) {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
 
   // Combine results, marking which are from extended search
@@ -43,12 +43,26 @@ export function SearchSidebar({
     ...extendedResults.map(r => ({ ...r, isExtended: true }))
   ];
 
+  // Hover handlers for auto-expand
+  const handleMouseEnter = () => {
+    if (!isMobile && collapsed) {
+      setOpen(true);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    if (!isMobile && !collapsed) {
+      setOpen(false);
+    }
+  };
+
   return (
     <Sidebar 
       side="right"
-      variant="sidebar"
+      variant="floating"
       collapsible="icon"
-      className="border-l"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className="p-2 border-b border-border flex items-center gap-3 justify-between">
         {!collapsed && (
