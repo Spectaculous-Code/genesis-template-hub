@@ -7,6 +7,7 @@ import { performSearch, SearchResult, searchTextExtended } from "@/lib/searchSer
 import { getBookOrder } from "@/lib/bookNameMapping";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SearchSidebar } from "@/components/SearchSidebar";
+import BibleReader from "@/components/BibleReader";
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
@@ -18,6 +19,9 @@ const SearchPage = () => {
   const [extendedResults, setExtendedResults] = useState<SearchResult | null>(null);
   const [isLoadingExtended, setIsLoadingExtended] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [selectedVerseNum, setSelectedVerseNum] = useState<number | null>(null);
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -101,8 +105,10 @@ const SearchPage = () => {
   const handleVerseClick = (verse: any) => {
     // Close sidebar but keep it available on the right
     setSidebarOpen(false);
-    // Navigate to the main reading view with the verse
-    navigate(`/?book=${encodeURIComponent(verse.book_name)}&chapter=${verse.chapter_number}&verse=${verse.verse_number}&version=${versionCode}`);
+    // Show Bible reader with selected verse
+    setSelectedBook(verse.book_name);
+    setSelectedChapter(verse.chapter_number);
+    setSelectedVerseNum(verse.verse_number);
   };
 
   return (
@@ -144,8 +150,21 @@ const SearchPage = () => {
             </div>
           </header>
 
-          <main className="p-6">
-            {!query ? (
+          <main className="flex-1 overflow-hidden">
+            {selectedBook && selectedChapter ? (
+              <BibleReader
+                book={selectedBook}
+                chapter={selectedChapter}
+                targetVerse={selectedVerseNum || undefined}
+                versionCode={versionCode}
+                onBookSelect={setSelectedBook}
+                onChapterSelect={setSelectedChapter}
+                onVerseSelect={(bookName, chapter, verse, text) => {
+                  // Handle verse selection if needed
+                }}
+                showNextChapterInfo={true}
+              />
+            ) : !query ? (
               <div className="text-center py-16 text-muted-foreground">
                 <SearchIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-lg">Syötä hakusana aloittaaksesi haun</p>
@@ -165,7 +184,7 @@ const SearchPage = () => {
                 </p>
               </div>
             ) : (
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-4xl mx-auto p-6">
                 <p className="text-muted-foreground mb-6">
                   Löytyi {sortedVerses.length + newExtendedVerses.length} tulosta. 
                   Klikkaa sivupalkin kuvaketta nähdäksesi tulokset.
