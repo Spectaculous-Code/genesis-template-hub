@@ -147,10 +147,8 @@ const IndexContent = () => {
       const result = await performSearch(query, versionCode);
       setSearchResults(result);
       
-      // Open sidebar if we have results
-      if (result.verses && result.verses.length > 0) {
-        setSearchSidebarOpen(true);
-      }
+      // Open sidebar after search
+      setSearchSidebarOpen(true);
       
       // Auto-trigger extended search for text searches
       if (result.type === 'text') {
