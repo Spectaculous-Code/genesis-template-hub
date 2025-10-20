@@ -67,7 +67,7 @@ export function SearchSidebar({
       <div className="p-2 border-b border-border flex items-center gap-3 justify-between">
         {!collapsed && (
           <span className="text-primary font-bold text-sm tracking-wide">
-            HAKUTULOKSET
+            HAKU - {allResults.length} kpl
           </span>
         )}
         <SidebarTrigger />
