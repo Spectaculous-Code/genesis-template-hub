@@ -89,18 +89,14 @@ export function SearchSidebar({
                   </div>
                 ) : allResults.length > 0 ? (
                   <>
-                    {allResults.map((verse) => (
+                    {results.map((verse) => (
                       <Card 
-                        key={`${verse.verse_id}-${verse.isExtended}`}
+                        key={verse.verse_id}
                         className="p-3 cursor-pointer hover:bg-accent transition-colors"
                         onClick={() => onVerseClick(verse)}
                       >
                         <div className="flex items-start gap-2">
-                          {verse.isExtended ? (
-                            <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                          ) : (
-                            <SearchIcon className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                          )}
+                          <SearchIcon className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
                             <div className="text-xs text-muted-foreground mb-1.5 font-medium">
                               {versionCode?.startsWith('fin') 
@@ -114,6 +110,35 @@ export function SearchSidebar({
                         </div>
                       </Card>
                     ))}
+                    
+                    {extendedResults.length > 0 && (
+                      <>
+                        <div className="py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-t border-border mt-2 pt-4">
+                          Yhdyssanatulokset
+                        </div>
+                        {extendedResults.map((verse) => (
+                          <Card 
+                            key={verse.verse_id}
+                            className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                            onClick={() => onVerseClick(verse)}
+                          >
+                            <div className="flex items-start gap-2">
+                              <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs text-muted-foreground mb-1.5 font-medium">
+                                  {versionCode?.startsWith('fin') 
+                                    ? getFinnishBookName(verse.book_name) 
+                                    : verse.book_name} {verse.chapter_number}:{verse.verse_number}
+                                </div>
+                                <div className="text-sm leading-relaxed">
+                                  {verse.text_content}
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </>
+                    )}
                     
                     {canExtendSearch && extendedResults.length === 0 && (
                       <Button
