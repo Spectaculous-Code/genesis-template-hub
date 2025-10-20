@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -41,6 +42,17 @@ export function SearchSidebar({
 }: SearchSidebarProps) {
   const { state, isMobile, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
+  const extendedResultsRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to extended results when they appear
+  useEffect(() => {
+    if (extendedResults.length > 0 && extendedResultsRef.current) {
+      extendedResultsRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
+  }, [extendedResults.length]);
 
   // Combine results, marking which are from extended search
   const allResults = [
@@ -113,7 +125,10 @@ export function SearchSidebar({
                     
                     {extendedResults.length > 0 && (
                       <>
-                        <div className="py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-t border-border mt-2 pt-4">
+                        <div 
+                          ref={extendedResultsRef}
+                          className="py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-t border-border mt-2 pt-4"
+                        >
                           Yhdyssanatulokset
                         </div>
                         {extendedResults.map((verse) => (
