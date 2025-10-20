@@ -209,10 +209,7 @@ const IndexContent = () => {
         selectedVerse={selectedVerse}
       />
 
-      <div 
-        className="flex-1 flex flex-col"
-        onMouseEnter={() => setOpen(false)}
-      >
+      <div className="flex-1 flex flex-col">
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
@@ -274,13 +271,15 @@ const IndexContent = () => {
           />
         </div>
 
-      <SearchSidebar 
-        results={sortedSearchVerses}
-        extendedResults={newExtendedVerses}
-        versionCode={versionCode}
-        onVerseClick={handleSearchVerseClick}
-        isLoading={isSearching}
-      />
+      <SidebarProvider defaultOpen={false}>
+        <SearchSidebar 
+          results={sortedSearchVerses}
+          extendedResults={newExtendedVerses}
+          versionCode={versionCode}
+          onVerseClick={handleSearchVerseClick}
+          isLoading={isSearching}
+        />
+      </SidebarProvider>
       </>
   );
 };
