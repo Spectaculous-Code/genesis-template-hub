@@ -7,6 +7,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { SearchIcon, Sparkles } from "lucide-react";
 import { getFinnishBookName } from "@/lib/bookNameMapping";
 
@@ -25,6 +26,8 @@ interface SearchSidebarProps {
   versionCode: string;
   onVerseClick: (verse: SearchResult) => void;
   isLoading: boolean;
+  onExtendedSearch: () => void;
+  canExtendSearch: boolean;
 }
 
 export function SearchSidebar({ 
@@ -32,7 +35,9 @@ export function SearchSidebar({
   extendedResults, 
   versionCode, 
   onVerseClick,
-  isLoading 
+  isLoading,
+  onExtendedSearch,
+  canExtendSearch
 }: SearchSidebarProps) {
   const { state, isMobile, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
@@ -109,6 +114,18 @@ export function SearchSidebar({
                         </div>
                       </Card>
                     ))}
+                    
+                    {canExtendSearch && extendedResults.length === 0 && (
+                      <Button
+                        onClick={onExtendedSearch}
+                        variant="outline"
+                        className="w-full"
+                        disabled={isLoading}
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Hae yhdyssanoja
+                      </Button>
+                    )}
                   </>
                 ) : (
                   <div className="text-center py-8 text-sm text-muted-foreground">

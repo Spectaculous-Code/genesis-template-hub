@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search as SearchIcon, ArrowLeft, Sparkles } from "lucide-react";
+import { Search as SearchIcon, ArrowLeft } from "lucide-react";
 import { performSearch, SearchResult, searchTextExtended } from "@/lib/searchService";
 import { getBookOrder } from "@/lib/bookNameMapping";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -45,10 +45,6 @@ const SearchPage = () => {
       // Open sidebar if we have results
       if (result.verses && result.verses.length > 0) {
         setSidebarOpen(true);
-      }
-      // Auto-trigger extended search for text searches
-      if (result.type === 'text') {
-        handleExtendedSearch(searchQuery, version);
       }
     } catch (error) {
       console.error("Search error:", error);
@@ -136,16 +132,6 @@ const SearchPage = () => {
                   <SearchIcon className="h-4 w-4 mr-2" />
                   Hae
                 </Button>
-                {results?.type === 'text' && sortedVerses.length > 0 && (
-                  <Button 
-                    onClick={() => handleExtendedSearch()}
-                    variant="outline"
-                    disabled={isLoadingExtended}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    {isLoadingExtended ? 'Haetaan...' : 'Laajennettu'}
-                  </Button>
-                )}
               </form>
             </div>
           </header>
@@ -200,6 +186,8 @@ const SearchPage = () => {
           versionCode={versionCode}
           onVerseClick={handleVerseClick}
           isLoading={isLoading || isLoadingExtended}
+          onExtendedSearch={() => handleExtendedSearch()}
+          canExtendSearch={results?.type === 'text' && sortedVerses.length > 0}
         />
       </div>
     </SidebarProvider>

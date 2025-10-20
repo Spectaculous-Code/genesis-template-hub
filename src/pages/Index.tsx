@@ -147,16 +147,28 @@ const IndexContent = () => {
       const result = await performSearch(query, versionCode);
       setSearchResults(result);
       
+      // Clear extended results when doing new search
+      setExtendedSearchResults(null);
+      
       // Open sidebar after search
       setSearchSidebarOpen(true);
-      
-      // Auto-trigger extended search for text searches
-      if (result.type === 'text') {
-        const extResult = await searchTextExtended(query, versionCode);
-        setExtendedSearchResults(extResult);
-      }
     } catch (error) {
       console.error("Search error:", error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleExtendedSearch = async () => {
+    if (!topSearchQuery.trim()) return;
+    
+    setIsSearching(true);
+    
+    try {
+      const extResult = await searchTextExtended(topSearchQuery, versionCode);
+      setExtendedSearchResults(extResult);
+    } catch (error) {
+      console.error("Extended search error:", error);
     } finally {
       setIsSearching(false);
     }
@@ -211,28 +223,15 @@ const IndexContent = () => {
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-lg flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Vapaa haku..."
-                    className="pl-10"
-                    value={topSearchQuery}
-                    onChange={(e) => setTopSearchQuery(e.target.value)}
-                    onKeyPress={handleTopSearchKeyPress}
-                  />
-                </div>
-                {searchResults?.type === 'text' && sortedSearchVerses.length > 0 && (
-                  <Button 
-                    onClick={() => handleTopSearch(topSearchQuery)}
-                    variant="outline"
-                    size="sm"
-                    disabled={isSearching}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Laajennettu
-                  </Button>
-                )}
+              <div className="relative flex-1 max-w-lg">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Vapaa haku..."
+                  className="pl-10"
+                  value={topSearchQuery}
+                  onChange={(e) => setTopSearchQuery(e.target.value)}
+                  onKeyPress={handleTopSearchKeyPress}
+                />
               </div>
               
               <Button
@@ -276,6 +275,8 @@ const IndexContent = () => {
           versionCode={versionCode}
           onVerseClick={handleSearchVerseClick}
           isLoading={isSearching}
+          onExtendedSearch={handleExtendedSearch}
+          canExtendSearch={searchResults?.type === 'text' && sortedSearchVerses.length > 0}
         />
       </SidebarProvider>
       </>
