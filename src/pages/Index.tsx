@@ -269,7 +269,7 @@ const IndexContent = () => {
           />
         </div>
 
-      <SidebarProvider defaultOpen={false}>
+      <SidebarProvider open={searchSidebarOpen} onOpenChange={setSearchSidebarOpen}>
         <SearchSidebar 
           results={sortedSearchVerses}
           extendedResults={newExtendedVerses}
