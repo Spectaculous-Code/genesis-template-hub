@@ -108,16 +108,20 @@ export function SearchSidebar({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {!collapsed && (
-        <div className="p-2 border-b border-border flex items-center gap-3 justify-between">
-          <span className="text-primary font-bold text-sm tracking-wide">
-            HAKU - {allResults.length} kpl
-          </span>
-          <SidebarTrigger />
+      <div className="p-2 border-b border-border flex items-center gap-3 justify-between">
+        <div className="flex items-center gap-2">
+          {collapsed ? (
+            <SearchIcon className="h-4 w-4 text-primary" />
+          ) : (
+            <span className="text-primary font-bold text-sm tracking-wide">
+              HAKU - {allResults.length} kpl
+            </span>
+          )}
         </div>
-      )}
+        <SidebarTrigger />
+      </div>
       
-      <SidebarContent ref={scrollContainerRef} className={collapsed ? "opacity-0 invisible" : "opacity-100 visible transition-opacity duration-200"}>
+      <SidebarContent ref={scrollContainerRef} className={collapsed ? "opacity-0 invisible h-0" : "opacity-100 visible transition-opacity duration-200"}>
         <SidebarGroup>
           <SidebarGroupContent>
             <div className="px-3 space-y-3">
