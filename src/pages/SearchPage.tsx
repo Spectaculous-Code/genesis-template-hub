@@ -109,8 +109,8 @@ const SearchPage = () => {
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <div className="min-h-screen bg-background w-full flex">
-        <SidebarInset className="flex-1">
+      <div className="min-h-screen bg-background w-full flex relative">
+        <SidebarInset className="flex-1 min-w-0">
           <header className="border-b bg-card sticky top-0 z-10">
             <div className="container mx-auto px-4 py-4">
               <div className="flex items-center gap-4 mb-4">
@@ -180,15 +180,19 @@ const SearchPage = () => {
           </main>
         </SidebarInset>
 
-        <SearchSidebar 
-          results={sortedVerses}
-          extendedResults={newExtendedVerses}
-          versionCode={versionCode}
-          onVerseClick={handleVerseClick}
-          isLoading={isLoading || isLoadingExtended}
-          onExtendedSearch={() => handleExtendedSearch()}
-          canExtendSearch={results?.type === 'text' && sortedVerses.length > 0}
-        />
+        <div className="fixed right-0 top-0 bottom-0 z-50 pointer-events-none">
+          <div className="pointer-events-auto h-full">
+            <SearchSidebar 
+              results={sortedVerses}
+              extendedResults={newExtendedVerses}
+              versionCode={versionCode}
+              onVerseClick={handleVerseClick}
+              isLoading={isLoading || isLoadingExtended}
+              onExtendedSearch={() => handleExtendedSearch()}
+              canExtendSearch={results?.type === 'text' && sortedVerses.length > 0}
+            />
+          </div>
+        </div>
       </div>
     </SidebarProvider>
   );

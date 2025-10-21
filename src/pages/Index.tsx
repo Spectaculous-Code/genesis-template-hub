@@ -219,7 +219,7 @@ const IndexContent = () => {
         selectedVerse={selectedVerse}
       />
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
@@ -268,17 +268,21 @@ const IndexContent = () => {
           />
         </div>
 
-      <SidebarProvider open={searchSidebarOpen} onOpenChange={setSearchSidebarOpen}>
-        <SearchSidebar 
-          results={sortedSearchVerses}
-          extendedResults={newExtendedVerses}
-          versionCode={versionCode}
-          onVerseClick={handleSearchVerseClick}
-          isLoading={isSearching}
-          onExtendedSearch={handleExtendedSearch}
-          canExtendSearch={searchResults?.type === 'text' && sortedSearchVerses.length > 0}
-        />
-      </SidebarProvider>
+      <div className="fixed right-0 top-0 bottom-0 z-50 pointer-events-none">
+        <SidebarProvider open={searchSidebarOpen} onOpenChange={setSearchSidebarOpen}>
+          <div className="pointer-events-auto">
+            <SearchSidebar 
+              results={sortedSearchVerses}
+              extendedResults={newExtendedVerses}
+              versionCode={versionCode}
+              onVerseClick={handleSearchVerseClick}
+              isLoading={isSearching}
+              onExtendedSearch={handleExtendedSearch}
+              canExtendSearch={searchResults?.type === 'text' && sortedSearchVerses.length > 0}
+            />
+          </div>
+        </SidebarProvider>
+      </div>
       </>
   );
 };
