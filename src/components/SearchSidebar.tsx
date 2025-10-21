@@ -118,7 +118,7 @@ export function SearchSidebar({
             </span>
           )}
         </div>
-        <SidebarTrigger />
+        {!collapsed && <SidebarTrigger />}
       </div>
       
       <SidebarContent ref={scrollContainerRef} className={collapsed ? "opacity-0 invisible h-0" : "opacity-100 visible transition-opacity duration-200"}>
