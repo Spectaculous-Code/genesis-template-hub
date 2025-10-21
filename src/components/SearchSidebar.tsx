@@ -62,7 +62,12 @@ export function SearchSidebar({
   // Restore scroll position when sidebar opens
   useEffect(() => {
     if (!collapsed && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollPositionRef.current;
+        }
+      });
     }
   }, [collapsed]);
 
