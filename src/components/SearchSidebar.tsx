@@ -43,6 +43,28 @@ export function SearchSidebar({
   const { state, isMobile, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
   const extendedResultsRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Save scroll position when scrolling
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      scrollPositionRef.current = container.scrollTop;
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Restore scroll position when sidebar opens
+  useEffect(() => {
+    if (!collapsed && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollPositionRef.current;
+    }
+  }, [collapsed]);
 
   // Scroll to extended results when they appear
   useEffect(() => {
@@ -91,7 +113,7 @@ export function SearchSidebar({
       </div>
       
       {!collapsed && (
-        <SidebarContent>
+        <SidebarContent ref={scrollContainerRef}>
           <SidebarGroup>
             <SidebarGroupContent>
               <div className="px-3 space-y-3">
