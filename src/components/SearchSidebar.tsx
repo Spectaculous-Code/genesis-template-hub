@@ -108,20 +108,19 @@ export function SearchSidebar({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="p-2 border-b border-border flex items-center gap-3 justify-between">
-        {!collapsed && (
+      {!collapsed && (
+        <div className="p-2 border-b border-border flex items-center gap-3 justify-between">
           <span className="text-primary font-bold text-sm tracking-wide">
             HAKU - {allResults.length} kpl
           </span>
-        )}
-        <SidebarTrigger />
-      </div>
+          <SidebarTrigger />
+        </div>
+      )}
       
-      {!collapsed && (
-        <SidebarContent ref={scrollContainerRef}>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <div className="px-3 space-y-3">
+      <SidebarContent ref={scrollContainerRef} className={collapsed ? "opacity-0 invisible" : "opacity-100 visible transition-opacity duration-200"}>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <div className="px-3 space-y-3">
                 {isLoading ? (
                   <div className="text-center py-8 text-sm text-muted-foreground">
                     Ladataan...
@@ -203,7 +202,6 @@ export function SearchSidebar({
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-      )}
     </Sidebar>
   );
 }
