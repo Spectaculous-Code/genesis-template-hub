@@ -107,6 +107,7 @@ export function SearchSidebar({
       collapsible="icon"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      className={collapsed ? "w-12" : "w-80"}
     >
       <div className="p-2 border-b border-border flex items-center gap-3 justify-between">
         <div className="flex items-center gap-2">
