@@ -7,13 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { User, BookOpen, Search, Highlighter, FileText, Calendar } from 'lucide-react';
+import { User, BookOpen, Search, Highlighter, FileText, Calendar, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import UserReadingHistory from '@/components/UserReadingHistory';
 import UserHighlights from '@/components/UserHighlights';
 import UserSummaries from '@/components/UserSummaries';
+import UserSearchHistory from '@/components/UserSearchHistory';
 
 const ProfileContent = () => {
   const { user } = useAuth();
@@ -146,7 +147,7 @@ const ProfileContent = () => {
             </div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="profiili" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Profiili
@@ -162,6 +163,10 @@ const ProfileContent = () => {
                 <TabsTrigger value="koosteet" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Koosteet
+                </TabsTrigger>
+                <TabsTrigger value="hakuhistoria" className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  Hakuhistoria
                 </TabsTrigger>
                 <TabsTrigger value="lukusuunnitelma" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
@@ -219,6 +224,10 @@ const ProfileContent = () => {
 
               <TabsContent value="koosteet">
                 <UserSummaries />
+              </TabsContent>
+
+              <TabsContent value="hakuhistoria">
+                <UserSearchHistory />
               </TabsContent>
 
               <TabsContent value="lukusuunnitelma">
