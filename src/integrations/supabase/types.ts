@@ -405,6 +405,33 @@ export type Database = {
         }
         Relationships: []
       }
+      search_history: {
+        Row: {
+          created_at: string
+          id: string
+          search_query: string
+          search_type: string
+          user_id: string
+          version_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          search_query: string
+          search_type: string
+          user_id: string
+          version_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          search_query?: string
+          search_type?: string
+          user_id?: string
+          version_code?: string
+        }
+        Relationships: []
+      }
       strongs_lexicon: {
         Row: {
           compare: string[] | null
@@ -865,7 +892,7 @@ export type Database = {
           id: string
           is_superseded: boolean
           text: string
-          text_search: unknown | null
+          text_search: unknown
           verse_key_id: string | null
           verse_number: number
           version_id: string
@@ -877,7 +904,7 @@ export type Database = {
           id?: string
           is_superseded?: boolean
           text: string
-          text_search?: unknown | null
+          text_search?: unknown
           verse_key_id?: string | null
           verse_number: number
           version_id: string
@@ -889,7 +916,7 @@ export type Database = {
           id?: string
           is_superseded?: boolean
           text?: string
-          text_search?: unknown | null
+          text_search?: unknown
           verse_key_id?: string | null
           verse_number?: number
           version_id?: string
@@ -1123,18 +1150,9 @@ export type Database = {
           verse_id: string
         }[]
       }
-      norm_strongs: {
-        Args: { p: string }
-        Returns: string
-      }
-      norm_strongs_core: {
-        Args: { p: string }
-        Returns: string
-      }
-      osis_head_for_book: {
-        Args: { p_book_id: string }
-        Returns: string
-      }
+      norm_strongs: { Args: { p: string }; Returns: string }
+      norm_strongs_core: { Args: { p: string }; Returns: string }
+      osis_head_for_book: { Args: { p_book_id: string }; Returns: string }
       save_bookmark: {
         Args: {
           p_book_name: string

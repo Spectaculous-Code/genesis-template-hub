@@ -8,10 +8,13 @@ import { getBookOrder } from "@/lib/bookNameMapping";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { SearchSidebar } from "@/components/SearchSidebar";
 import BibleReader from "@/components/BibleReader";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const SearchPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [versionCode, setVersionCode] = useState(searchParams.get("v") || "finstlk201");
   const [results, setResults] = useState<SearchResult | null>(null);
@@ -22,6 +25,21 @@ const SearchPage = () => {
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
   const [selectedVerseNum, setSelectedVerseNum] = useState<number | null>(null);
+
+  const saveSearchToHistory = async (searchQuery: string, searchType: 'reference' | 'text', version: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase.from('search_history').insert({
+        user_id: user.id,
+        search_query: searchQuery,
+        search_type: searchType,
+        version_code: version
+      });
+    } catch (error) {
+      console.error("Failed to save search history:", error);
+    }
+  };
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -42,6 +60,10 @@ const SearchPage = () => {
     try {
       const result = await performSearch(searchQuery, version);
       setResults(result);
+      
+      // Save search to history
+      await saveSearchToHistory(searchQuery, result.type, version);
+      
       // Open sidebar if we have results
       if (result.verses && result.verses.length > 0) {
         setSidebarOpen(true);
