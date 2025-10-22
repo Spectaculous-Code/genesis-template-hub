@@ -152,7 +152,7 @@ const VerseHighlighter = ({
     >
       {/* Action buttons - floating in top right */}
       <div className={`
-        absolute top-2 right-2 flex items-center gap-1 
+        absolute -top-1 right-2 flex items-center gap-1 
         bg-background/95 backdrop-blur-sm rounded-md p-1 shadow-sm
         opacity-0 group-hover:opacity-100 transition-opacity
         ${showActions ? 'opacity-100' : ''}
