@@ -12,12 +12,15 @@ import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
 import { SearchSidebar } from "@/components/SearchSidebar";
 import { performSearch, searchTextExtended, SearchResult } from "@/lib/searchService";
 import { getBookOrder } from "@/lib/bookNameMapping";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const IndexContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { latestPosition } = useLatestReadingPosition();
   const { setOpen } = useSidebar();
+  const { user } = useAuth();
   const [selectedBook, setSelectedBook] = useState("");
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [targetVerse, setTargetVerse] = useState<number | undefined>();
@@ -146,6 +149,24 @@ const IndexContent = () => {
       // Perform regular search
       const result = await performSearch(query, versionCode);
       setSearchResults(result);
+      
+      // Save to search history
+      if (user) {
+        console.log("Saving search to history:", { query, type: result.type, versionCode, userId: user.id });
+        const { error } = await supabase.from('search_history').insert({
+          user_id: user.id,
+          search_query: query,
+          search_type: result.type,
+          version_code: versionCode
+        });
+        if (error) {
+          console.error("Error saving search history:", error);
+        } else {
+          console.log("Search history saved successfully");
+        }
+      } else {
+        console.log("No user, skipping search history save");
+      }
       
       // Clear extended results when doing new search
       setExtendedSearchResults(null);
