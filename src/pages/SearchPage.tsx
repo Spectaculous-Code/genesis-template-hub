@@ -27,17 +27,28 @@ const SearchPage = () => {
   const [selectedVerseNum, setSelectedVerseNum] = useState<number | null>(null);
 
   const saveSearchToHistory = async (searchQuery: string, searchType: 'reference' | 'text', version: string) => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user, skipping search history save");
+      return;
+    }
+    
+    console.log("Saving search to history:", { searchQuery, searchType, version, userId: user.id });
     
     try {
-      await supabase.from('search_history').insert({
+      const { data, error } = await supabase.from('search_history').insert({
         user_id: user.id,
         search_query: searchQuery,
         search_type: searchType,
         version_code: version
       });
+      
+      if (error) {
+        console.error("Error saving search history:", error);
+      } else {
+        console.log("Search history saved successfully", data);
+      }
     } catch (error) {
-      console.error("Failed to save search history:", error);
+      console.error("Exception saving search history:", error);
     }
   };
 
