@@ -219,7 +219,7 @@ const IndexContent = () => {
         selectedVerse={selectedVerse}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 mr-12">
           {/* Top Header */}
           <header className="bg-background border-b border-border p-4">
             <div className="flex items-center gap-4">
