@@ -150,79 +150,81 @@ const VerseHighlighter = ({
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
+      {/* Action buttons - floating in top right */}
+      <div className={`
+        absolute top-2 right-2 flex items-center gap-1 
+        bg-background/95 backdrop-blur-sm rounded-md p-1 shadow-sm
+        opacity-0 group-hover:opacity-100 transition-opacity
+        ${showActions ? 'opacity-100' : ''}
+      `}>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onHighlight();
+          }}
+          className={isHighlighted ? 'text-yellow-600 dark:text-yellow-400' : ''}
+        >
+          <Highlighter className="h-4 w-4" />
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            // Future: Add note functionality
+          }}
+        >
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            // Future: Add sharing functionality
+          }}
+        >
+          <Share className="h-4 w-4" />
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (book && chapter) {
+              navigate(`/study/${book}/${chapter}/${verse.number}`);
+            }
+          }}
+        >
+          <BookOpen className="h-4 w-4" />
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            addToSummary();
+          }}
+          title="Lisää koosteeseen"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+
       <div className="flex items-start gap-3">
         <span className="flex-shrink-0 w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-sm font-medium text-primary">
           {verse.number}
         </span>
         
-        <p className="flex-1 text-foreground leading-relaxed select-text">
+        <p className="flex-1 text-foreground leading-relaxed select-text pr-2">
           {verse.text}
         </p>
-        
-        {/* Action buttons */}
-        <div className={`
-          flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity
-          ${showActions ? 'opacity-100' : ''}
-        `}>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onHighlight();
-            }}
-            className={isHighlighted ? 'text-yellow-600 dark:text-yellow-400' : ''}
-          >
-            <Highlighter className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Future: Add note functionality
-            }}
-          >
-            <MessageSquare className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Future: Add sharing functionality
-            }}
-          >
-            <Share className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (book && chapter) {
-                navigate(`/study/${book}/${chapter}/${verse.number}`);
-              }
-            }}
-          >
-            <BookOpen className="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              addToSummary();
-            }}
-            title="Lisää koosteeseen"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
     </div>
   );
