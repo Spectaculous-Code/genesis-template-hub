@@ -40,10 +40,11 @@ const SearchPage = () => {
         search_query: searchQuery,
         search_type: searchType,
         version_code: version
-      });
+      }).select();
       
       if (error) {
         console.error("Error saving search history:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
       } else {
         console.log("Search history saved successfully", data);
       }

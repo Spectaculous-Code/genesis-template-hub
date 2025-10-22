@@ -153,16 +153,17 @@ const IndexContent = () => {
       // Save to search history
       if (user) {
         console.log("Saving search to history:", { query, type: result.type, versionCode, userId: user.id });
-        const { error } = await supabase.from('search_history').insert({
+        const { data, error } = await supabase.from('search_history').insert({
           user_id: user.id,
           search_query: query,
           search_type: result.type,
           version_code: versionCode
-        });
+        }).select();
         if (error) {
           console.error("Error saving search history:", error);
+          console.error("Error details:", JSON.stringify(error, null, 2));
         } else {
-          console.log("Search history saved successfully");
+          console.log("Search history saved successfully", data);
         }
       } else {
         console.log("No user, skipping search history save");
