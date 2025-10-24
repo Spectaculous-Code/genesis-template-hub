@@ -154,13 +154,10 @@ const VerseStudyContent = () => {
   };
 
   const handleBack = () => {
-    const from = location.state?.from;
-    if (from) {
-      navigate(from);
-    } else if (window.history.length > 1) {
-      navigate(-1);
+    if (location.state?.from) {
+      navigate(location.state.from, { replace: true });
     } else {
-      navigate('/');
+      navigate(-1);
     }
   };
 
