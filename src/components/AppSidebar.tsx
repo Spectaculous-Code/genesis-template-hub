@@ -193,9 +193,9 @@ export function AppSidebar({
       <div className="p-2 border-b border-border flex items-center gap-3">
         <SidebarTrigger />
         {!collapsed && (
-          <span className="text-primary font-bold text-sm tracking-wide">
+          <Link to="/" className="text-primary font-bold text-sm tracking-wide hover:underline">
             RAAMATTU NYT
-          </span>
+          </Link>
         )}
       </div>
       
