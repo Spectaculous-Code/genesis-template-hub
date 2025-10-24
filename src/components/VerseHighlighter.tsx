@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Highlighter, MessageSquare, Share, BookOpen, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,7 @@ const VerseHighlighter = ({
 }: VerseHighlighterProps) => {
   const [showActions, setShowActions] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -197,7 +198,8 @@ const VerseHighlighter = ({
           onClick={(e) => {
             e.stopPropagation();
             if (book && chapter) {
-              navigate(`/study/${book}/${chapter}/${verse.number}`);
+              const from = location.pathname + location.search;
+              navigate(`/study/${book}/${chapter}/${verse.number}`, { state: { from } });
             }
           }}
         >

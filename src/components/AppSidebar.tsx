@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getFinnishBookName } from "@/lib/bookNameMapping";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface AppSidebarProps {
   onNavigateToContinueAudio: () => void;
@@ -47,6 +47,8 @@ export function AppSidebar({
   const { state, open, isMobile, toggleSidebar, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // Hover handlers for auto-expand
   const handleMouseEnter = () => {
@@ -325,10 +327,9 @@ export function AppSidebar({
                         size="sm" 
                         className="h-6 px-2 text-xs"
                         onClick={() => {
-                          // Get the English book name for the URL
                           const englishBookName = selectedVerse.bookName;
-                          console.log('Navigating to study page with book:', englishBookName);
-                          window.location.href = `/study/${englishBookName}/${selectedVerse.chapter}/${selectedVerse.verse}`;
+                          const from = location.pathname + location.search;
+                          navigate(`/study/${englishBookName}/${selectedVerse.chapter}/${selectedVerse.verse}` , { state: { from } });
                         }}
                       >
                         <BookOpen className="h-3 w-3 mr-1" />

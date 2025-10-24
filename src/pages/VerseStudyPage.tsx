@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import VerseStudy from "@/components/VerseStudy";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,7 @@ const VerseStudyContent = () => {
   }>();
   const navigate = useNavigate();
   const { setOpen } = useSidebar();
+  const location = useLocation() as { state?: { from?: string } };
   const [selectedVerse, setSelectedVerse] = useState<SelectedVerse | null>(null);
   const [currentVersion, setCurrentVersion] = useState<string>('fin33');
   const [loading, setLoading] = useState(true);
@@ -153,7 +154,14 @@ const VerseStudyContent = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    const from = location.state?.from;
+    if (from) {
+      navigate(from);
+    } else if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleNavigateToContinueAudio = () => {

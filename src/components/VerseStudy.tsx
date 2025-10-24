@@ -11,6 +11,7 @@ import SearchResults from "./SearchResults";
 import { searchByStrongsNumber, StrongsSearchResult } from "@/lib/strongsSearchService";
 import { SearchResult } from "@/lib/searchService";
 import LexiconCard from "./LexiconCard";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface SelectedVerse {
   bookName: string;
@@ -39,6 +40,8 @@ interface StrongsDefinition {
 }
 
 const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) => {
+  const navigate = useNavigate();
+  const location = useLocation() as any;
   const [kjvVerse, setKjvVerse] = useState<KJVVerseData | null>(null);
   const [selectedStrongsNumber, setSelectedStrongsNumber] = useState<string | null>(null);
   const [strongsDefinition, setStrongsDefinition] = useState<StrongsDefinition | null>(null);
@@ -300,8 +303,9 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
 
   const handleStrongsSearchNavigate = (bookName: string, chapter: number, verse?: number) => {
     setShowStrongsSearch(false);
-    // Navigate to the new verse study page
-    window.location.href = `/study/${bookName}/${chapter}/${verse || 1}`;
+    // Navigate to the new verse study page and preserve origin
+    const from = (location as any)?.state?.from;
+    navigate(`/study/${bookName}/${chapter}/${verse || 1}`, { state: { from } });
   };
 
   const renderTaggedText = (taggedText: string) => {
