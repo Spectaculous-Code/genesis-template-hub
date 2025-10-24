@@ -305,7 +305,8 @@ const VerseStudy = ({ selectedVerse, onBack, currentVersion }: VerseStudyProps) 
     setShowStrongsSearch(false);
     // Navigate to the new verse study page and preserve origin
     const from = (location as any)?.state?.from;
-    navigate(`/study/${bookName}/${chapter}/${verse || 1}`, { state: { from } });
+    const prevRef = (location as any)?.state?.prevRef;
+    navigate(`/study/${bookName}/${chapter}/${verse || 1}`, { state: { from, prevRef } });
   };
 
   const renderTaggedText = (taggedText: string) => {

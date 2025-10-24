@@ -329,7 +329,8 @@ export function AppSidebar({
                         onClick={() => {
                           const englishBookName = selectedVerse.bookName;
                           const from = location.pathname + location.search;
-                          navigate(`/study/${englishBookName}/${selectedVerse.chapter}/${selectedVerse.verse}` , { state: { from } });
+                          const prevRef = { book: englishBookName, chapter: selectedVerse.chapter, verse: selectedVerse.verse };
+                          navigate(`/study/${englishBookName}/${selectedVerse.chapter}/${selectedVerse.verse}` , { state: { from, prevRef } });
                         }}
                       >
                         <BookOpen className="h-3 w-3 mr-1" />

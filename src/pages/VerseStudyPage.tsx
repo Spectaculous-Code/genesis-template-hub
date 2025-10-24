@@ -25,7 +25,7 @@ const VerseStudyContent = () => {
   }>();
   const navigate = useNavigate();
   const { setOpen } = useSidebar();
-  const location = useLocation() as { state?: { from?: string } };
+  const location = useLocation() as { state?: { from?: string; prevRef?: { book?: string; chapter?: number; verse?: number } } };
   const [selectedVerse, setSelectedVerse] = useState<SelectedVerse | null>(null);
   const [currentVersion, setCurrentVersion] = useState<string>('fin33');
   const [loading, setLoading] = useState(true);
@@ -154,11 +154,31 @@ const VerseStudyContent = () => {
   };
 
   const handleBack = () => {
+    const prevRef = location.state?.prevRef as { book?: string; chapter?: number; verse?: number } | undefined;
+    if (prevRef?.book && prevRef?.chapter) {
+      const q = `/?book=${encodeURIComponent(prevRef.book)}&chapter=${prevRef.chapter}` +
+        (prevRef.verse ? `&verse=${prevRef.verse}` : '');
+      navigate(q, { replace: true });
+      return;
+    }
     if (location.state?.from) {
       navigate(location.state.from, { replace: true });
-    } else {
-      navigate(-1);
+      return;
     }
+    // Fallback to last reading position from localStorage
+    try {
+      const saved = localStorage.getItem('lastReadingPosition');
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (p?.bookName && p?.chapter) {
+          const q2 = `/?book=${encodeURIComponent(p.bookName)}&chapter=${p.chapter}` +
+            (p.verse ? `&verse=${p.verse}` : '');
+          navigate(q2, { replace: true });
+          return;
+        }
+      }
+    } catch {}
+    navigate('/');
   };
 
   const handleNavigateToContinueAudio = () => {

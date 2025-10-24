@@ -199,7 +199,8 @@ const VerseHighlighter = ({
             e.stopPropagation();
             if (book && chapter) {
               const from = location.pathname + location.search;
-              navigate(`/study/${book}/${chapter}/${verse.number}`, { state: { from } });
+              const prevRef = { book, chapter, verse: verse.number };
+              navigate(`/study/${book}/${chapter}/${verse.number}`, { state: { from, prevRef } });
             }
           }}
         >
