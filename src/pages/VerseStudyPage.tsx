@@ -153,7 +153,7 @@ const VerseStudyContent = () => {
   };
 
   const handleBack = () => {
-    navigate('/');
+    navigate(-1);
   };
 
   const handleNavigateToContinueAudio = () => {
