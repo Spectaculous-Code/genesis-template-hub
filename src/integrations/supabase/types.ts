@@ -19,28 +19,49 @@ export type Database = {
           chapter_id: string
           duration_ms: number | null
           file_url: string
+          hash: string | null
           id: string
+          language: string | null
           narrator: string | null
           quality: string | null
+          reader_key: string | null
+          scope: string | null
+          tts_provider: string | null
+          version_code: string | null
           version_id: string
+          voice: string | null
         }
         Insert: {
           chapter_id: string
           duration_ms?: number | null
           file_url: string
+          hash?: string | null
           id?: string
+          language?: string | null
           narrator?: string | null
           quality?: string | null
+          reader_key?: string | null
+          scope?: string | null
+          tts_provider?: string | null
+          version_code?: string | null
           version_id: string
+          voice?: string | null
         }
         Update: {
           chapter_id?: string
           duration_ms?: number | null
           file_url?: string
+          hash?: string | null
           id?: string
+          language?: string | null
           narrator?: string | null
           quality?: string | null
+          reader_key?: string | null
+          scope?: string | null
+          tts_provider?: string | null
+          version_code?: string | null
           version_id?: string
+          voice?: string | null
         }
         Relationships: [
           {
