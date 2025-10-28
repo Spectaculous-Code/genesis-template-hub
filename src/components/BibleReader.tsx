@@ -16,7 +16,7 @@ interface BibleReaderProps {
   chapter: number;
   targetVerse?: number;
   versionCode?: string;
-  readerKey?: string;
+  readerKey?: string; // Optional - if undefined, audio is disabled
   onBookSelect: (book: string) => void;
   onChapterSelect: (chapter: number) => void;
   onVerseSelect: (bookName: string, chapter: number, verse: number, text: string) => void;
@@ -31,7 +31,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey = 'elevenlabs:9BWtsMINqrJLrRacOk9x', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -162,6 +162,16 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   }, [targetVerse, chapterData]);
 
   const togglePlayback = async () => {
+    // Check if audio is disabled for this version
+    if (!readerKey) {
+      toast({
+        title: "Ääni ei saatavilla",
+        description: "Valitse ääni profiiliasetuksista.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (isPlaying) {
       // Pause audio
       if (audioRef.current) {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { User, BookOpen, Search, Highlighter, FileText, Calendar, History } from 'lucide-react';
+import { User, BookOpen, Search, Highlighter, FileText, Calendar, History, Volume2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -15,6 +15,10 @@ import UserReadingHistory from '@/components/UserReadingHistory';
 import UserHighlights from '@/components/UserHighlights';
 import UserSummaries from '@/components/UserSummaries';
 import UserSearchHistory from '@/components/UserSearchHistory';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getVoiceOptionsForVersion } from '@/lib/versionVoices';
+import { useVoicePreferences } from '@/hooks/useVoicePreferences';
+import { getVoiceById } from '@/lib/elevenLabsVoices';
 
 const ProfileContent = () => {
   const { user } = useAuth();
@@ -25,6 +29,8 @@ const ProfileContent = () => {
   const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || '');
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [bibleVersions, setBibleVersions] = useState<Array<{ id: string; code: string; name: string }>>([]);
+  const { getVoiceForVersion, setVoiceForVersion, loading: voiceLoading } = useVoicePreferences();
 
   // Get tab from URL params, default to "profiili"
   const urlParams = new URLSearchParams(location.search);
@@ -33,6 +39,24 @@ const ProfileContent = () => {
   const handleTabChange = (value: string) => {
     navigate(`/profile?tab=${value}`);
   };
+
+  // Fetch Bible versions
+  useEffect(() => {
+    const fetchVersions = async () => {
+      const { data, error } = await (supabase as any)
+        .schema('bible_schema')
+        .from('bible_versions')
+        .select('id, code, name')
+        .eq('is_active', true)
+        .order('name');
+
+      if (data && !error) {
+        setBibleVersions(data);
+      }
+    };
+
+    fetchVersions();
+  }, []);
 
   const handleSearch = (query: string) => {
     if (query.trim()) {
@@ -210,6 +234,64 @@ const ProfileContent = () => {
                     >
                       {saving ? "Tallennetaan..." : "Tallenna muutokset"}
                     </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="mt-4">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="h-5 w-5" />
+                      <CardTitle>Ääniasetukset</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Valitse ääni jokaiselle Raamatun käännökselle. Ääni toistetaan kun painat toistopainiketta.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {voiceLoading ? (
+                      <div className="text-center text-muted-foreground">Ladataan...</div>
+                    ) : (
+                      bibleVersions.map((version) => {
+                        const voiceOptions = getVoiceOptionsForVersion(version.code);
+                        const currentVoiceId = getVoiceForVersion(version.id, version.code);
+                        
+                        return (
+                          <div key={version.id} className="space-y-2">
+                            <Label htmlFor={`voice-${version.id}`}>
+                              {version.name} ({version.code})
+                            </Label>
+                            <Select
+                              value={currentVoiceId}
+                              onValueChange={(value) => {
+                                setVoiceForVersion(version.id, value);
+                                const voiceName = voiceOptions.find(v => v.id === value)?.name;
+                                toast({
+                                  title: "Ääni tallennettu",
+                                  description: `${version.code}: ${voiceName}`,
+                                });
+                              }}
+                            >
+                              <SelectTrigger id={`voice-${version.id}`}>
+                                <SelectValue>
+                                  {voiceOptions.find(v => v.id === currentVoiceId)?.name || "Valitse ääni"}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[300px]">
+                                {voiceOptions.map((voice) => (
+                                  <SelectItem 
+                                    key={voice.id} 
+                                    value={voice.id}
+                                    disabled={voice.disabled}
+                                  >
+                                    {voice.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

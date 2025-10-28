@@ -849,6 +849,33 @@ export type Database = {
           },
         ]
       }
+      user_voice_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+          version_id: string
+          voice_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+          version_id: string
+          voice_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+          version_id?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
       verse_keys: {
         Row: {
           book_id: string
