@@ -13,6 +13,7 @@ import { useEffect, useRef } from "react";
 import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { ELEVENLABS_VOICES, DEFAULT_VOICE, getVoiceById, getVoiceReaderKey } from "@/lib/elevenLabsVoices";
 
 interface BibleVersion {
   id: string;
@@ -53,6 +54,7 @@ const MainContent = ({
   const [bibleBooks, setBibleBooks] = useState<BibleBook[]>([]);
   const [bibleVersions, setBibleVersions] = useState<BibleVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string>("");
+  const [selectedVoice, setSelectedVoice] = useState<string>(DEFAULT_VOICE.id);
   const [isFromLatestPosition, setIsFromLatestPosition] = useState(false);
   const [hasManuallyNavigated, setHasManuallyNavigated] = useState(false);
   const bibleReaderRef = useRef<any>(null);
@@ -247,6 +249,12 @@ const MainContent = ({
           }
         }
       }
+
+      // Load saved voice preference
+      const savedVoice = localStorage.getItem('selectedVoice');
+      if (savedVoice && ELEVENLABS_VOICES.find(v => v.id === savedVoice)) {
+        setSelectedVoice(savedVoice);
+      }
     };
     fetchInitialData();
   }, []);
@@ -332,12 +340,16 @@ const MainContent = ({
       
       default:
         const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
+        const voice = getVoiceById(selectedVoice);
+        const readerKey = voice ? getVoiceReaderKey(voice.voiceId) : getVoiceReaderKey(DEFAULT_VOICE.voiceId);
+        
         return (
           <BibleReader
             book={selectedBook}
             chapter={selectedChapter}
             targetVerse={targetVerse}
             versionCode={currentVersionCode}
+            readerKey={readerKey}
             onBookSelect={handleBookSelect}
             onChapterSelect={handleChapterSelect}
             onVerseSelect={onVerseSelect}
@@ -410,6 +422,29 @@ const MainContent = ({
                   {bibleVersions.map((version) => (
                     <SelectItem key={version.id} value={version.id}>
                       {version.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Voice Selection */}
+              <Select value={selectedVoice} onValueChange={(value) => {
+                setSelectedVoice(value);
+                localStorage.setItem('selectedVoice', value);
+                toast({
+                  title: "Ääni vaihdettu",
+                  description: ELEVENLABS_VOICES.find(v => v.id === value)?.name || "Tuntematon",
+                });
+              }}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Valitse ääni">
+                    {ELEVENLABS_VOICES.find(v => v.id === selectedVoice)?.name || "Ääni"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50 max-h-[300px]">
+                  {ELEVENLABS_VOICES.map((voice) => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      {voice.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

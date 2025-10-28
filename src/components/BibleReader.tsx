@@ -16,6 +16,7 @@ interface BibleReaderProps {
   chapter: number;
   targetVerse?: number;
   versionCode?: string;
+  readerKey?: string;
   onBookSelect: (book: string) => void;
   onChapterSelect: (chapter: number) => void;
   onVerseSelect: (bookName: string, chapter: number, verse: number, text: string) => void;
@@ -30,7 +31,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey = 'elevenlabs:9BWtsMINqrJLrRacOk9x', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -183,7 +184,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
             description: `${getFinnishBookName(book)} ${chapter}`,
           });
           
-          const audioData = await generateChapterAudio(book, chapter, versionCode);
+          const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
           setAudioUrl(audioData.file_url);
           
           // Wait for audio element to be ready
@@ -243,7 +244,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     };
   }, [toast]);
 
-  // Reset audio when chapter changes
+  // Reset audio when chapter or voice changes
   useEffect(() => {
     setAudioUrl(null);
     setIsPlaying(false);
@@ -251,7 +252,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       audioRef.current.pause();
       audioRef.current.src = '';
     }
-  }, [book, chapter, versionCode]);
+  }, [book, chapter, versionCode, readerKey]);
 
   const toggleHighlight = async (verseNumber: number) => {
     if (!user) {
