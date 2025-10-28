@@ -1,1 +1,4 @@
 project_id = "iryqgmjauybluwnqhxbg"
+
+[functions.generate-audio]
+verify_jwt = true
