@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, MessageSquare } from "lucide-react";
@@ -9,6 +9,7 @@ import VerseHighlighter from "./VerseHighlighter";
 import InfoBox, { generateNextChapterInfo } from "./InfoBox";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { generateChapterAudio } from "@/lib/audioService";
 
 interface BibleReaderProps {
   book: string;
@@ -24,7 +25,12 @@ interface BibleReaderProps {
   isFromLatestPosition?: boolean;
 }
 
-const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }: BibleReaderProps) => {
+export interface BibleReaderHandle {
+  togglePlayback: () => void;
+  isPlaying: boolean;
+}
+
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -38,6 +44,8 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
   const [isNavigating, setIsNavigating] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [hasUserNavigated, setHasUserNavigated] = useState(false);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
@@ -48,6 +56,13 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
       setHasUserNavigated(true);
     }
   }, [book, chapter]);
+
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    togglePlayback,
+    isPlaying
+  }), [isPlaying]);
+
   // Remove the saveReadingPosition function as it's no longer needed for auto-save
   // Only explicit bookmark saves are done in MainContent.tsx
 
@@ -145,26 +160,98 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
     }
   }, [targetVerse, chapterData]);
 
-  const togglePlayback = () => {
+  const togglePlayback = async () => {
     if (isPlaying) {
+      // Pause audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       setIsPlaying(false);
-      // In real app, pause audio
       toast({
         title: "Toisto pysäytetty",
         description: `${getFinnishBookName(book)} ${chapter}`,
       });
     } else {
-      setIsPlaying(true);
-      // In real app, start audio
-      toast({
-        title: "Toisto aloitettu",
-        description: `${getFinnishBookName(book)} ${chapter}`,
-      });
-      
-      // Simulate verse progression
-      setTimeout(() => setIsPlaying(false), 5000);
+      // Start audio
+      try {
+        setIsLoadingAudio(true);
+        
+        // Generate or fetch audio if not already loaded
+        if (!audioUrl) {
+          toast({
+            title: "Ladataan ääntä...",
+            description: `${getFinnishBookName(book)} ${chapter}`,
+          });
+          
+          const audioData = await generateChapterAudio(book, chapter, versionCode);
+          setAudioUrl(audioData.file_url);
+          
+          // Wait for audio element to be ready
+          if (audioRef.current) {
+            audioRef.current.src = audioData.file_url;
+            audioRef.current.load();
+          }
+        }
+        
+        // Play audio
+        if (audioRef.current) {
+          await audioRef.current.play();
+          setIsPlaying(true);
+          toast({
+            title: "Toisto aloitettu",
+            description: `${getFinnishBookName(book)} ${chapter}`,
+          });
+        }
+      } catch (error) {
+        console.error('Error playing audio:', error);
+        toast({
+          title: "Virhe",
+          description: "Äänen toistaminen epäonnistui. Yritä uudelleen.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoadingAudio(false);
+      }
     }
   };
+
+  // Handle audio ended event
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+
+    const handleError = (e: Event) => {
+      console.error('Audio playback error:', e);
+      setIsPlaying(false);
+      toast({
+        title: "Virhe",
+        description: "Äänen toistamisessa tapahtui virhe",
+        variant: "destructive"
+      });
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+    };
+  }, [toast]);
+
+  // Reset audio when chapter changes
+  useEffect(() => {
+    setAudioUrl(null);
+    setIsPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+  }, [book, chapter, versionCode]);
 
   const toggleHighlight = async (verseNumber: number) => {
     if (!user) {
@@ -536,8 +623,12 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
         </Button>
       </div>
 
-      {/* Hidden audio element for future implementation */}
-      <audio ref={audioRef} style={{ display: 'none' }} />
+      {/* Audio element for playback */}
+      <audio 
+        ref={audioRef} 
+        style={{ display: 'none' }}
+        preload="none"
+      />
       
       {/* Info Box */}
       {showInfoBox && (
@@ -548,6 +639,8 @@ const BibleReader = ({ book, chapter, targetVerse, versionCode = 'finstlk201', o
       )}
     </div>
   );
-};
+});
+
+BibleReader.displayName = 'BibleReader';
 
 export default BibleReader;

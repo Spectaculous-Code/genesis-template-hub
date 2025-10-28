@@ -9,7 +9,7 @@ import { getBibleBooks, BibleBook } from "@/lib/bibleService";
 import { getFinnishBookName, getEnglishBookName } from "@/lib/bookNameMapping";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLatestReadingPosition } from "@/hooks/useLatestReadingPosition";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -53,9 +53,9 @@ const MainContent = ({
   const [bibleBooks, setBibleBooks] = useState<BibleBook[]>([]);
   const [bibleVersions, setBibleVersions] = useState<BibleVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<string>("");
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isFromLatestPosition, setIsFromLatestPosition] = useState(false);
   const [hasManuallyNavigated, setHasManuallyNavigated] = useState(false);
+  const bibleReaderRef = useRef<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const { latestPosition, loading: positionLoading, refetch: refetchLatestPosition } = useLatestReadingPosition();
@@ -316,12 +316,10 @@ const MainContent = ({
     });
   };
 
-  const togglePlayback = () => {
-    setIsPlaying(!isPlaying);
-    toast({
-      title: isPlaying ? "Toisto pysäytetty" : "Toisto aloitettu",
-      description: `${getFinnishBookName(selectedBook)} ${selectedChapter}`,
-    });
+  const handlePlaybackToggle = () => {
+    if (bibleReaderRef.current) {
+      bibleReaderRef.current.togglePlayback();
+    }
   };
 
   const renderContent = () => {
@@ -347,6 +345,7 @@ const MainContent = ({
             isAppTitleNavigation={isAppTitleNavigation}
             onNavigationComplete={onNavigationComplete}
             isFromLatestPosition={isFromLatestPosition}
+            ref={bibleReaderRef}
           />
         );
     }
@@ -418,20 +417,11 @@ const MainContent = ({
             </div>
           </div>
 
-          {/* Audio Controls */}
+           {/* Audio Controls */}
           {currentView === 'bible' && (
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <SkipBack className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={togglePlayback}>
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-              <Button variant="outline" size="sm">
-                <SkipForward className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm">
-                <Volume2 className="h-4 w-4" />
+              <Button variant="outline" size="sm" onClick={handlePlaybackToggle}>
+                <Play className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="sm" onClick={saveAsBookmark}>
                 <Bookmark className="h-4 w-4" />
