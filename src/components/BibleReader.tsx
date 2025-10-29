@@ -165,9 +165,10 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     // Check if audio is disabled for this version
     if (!readerKey) {
       toast({
-        title: "Ääni ei saatavilla",
-        description: "Valitse ääni profiiliasetuksista.",
-        variant: "destructive"
+        title: "Ääntä ei ole valittu tälle versiolle",
+        description: "Mene profiilisivulle valitsemaan ääni (Venla tai Urho) tälle Raamatun versiolle, tai vaihda toiseen Raamatun versioon, jolle ääni on valittu.",
+        variant: "destructive",
+        duration: 6000
       });
       return;
     }
