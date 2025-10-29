@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { getVoiceById, getVoiceReaderKey } from "@/lib/elevenLabsVoices";
 import { useVoicePreferences } from "@/hooks/useVoicePreferences";
-import { NO_AUDIO_VOICE_ID } from "@/lib/versionVoices";
+import { NO_AUDIO_VOICE_ID, VERSION_ALLOWED_VOICES } from "@/lib/versionVoices";
 
 interface BibleVersion {
   id: string;
@@ -334,6 +334,12 @@ const MainContent = ({
   const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
   const currentVoiceId = getVoiceForVersion(selectedVersion, currentVersionCode);
   const hasAudioEnabled = currentVoiceId && currentVoiceId !== NO_AUDIO_VOICE_ID;
+  
+  // Check if version supports audio at all
+  const versionSupportsAudio = () => {
+    const allowedVoices = VERSION_ALLOWED_VOICES[currentVersionCode];
+    return allowedVoices && allowedVoices.length > 0;
+  };
 
   const renderContent = () => {
     switch (currentView) {
@@ -451,10 +457,14 @@ const MainContent = ({
                 <Button variant="outline" size="sm" onClick={handlePlaybackToggle}>
                   <Play className="h-4 w-4" />
                 </Button>
-              ) : (
+              ) : versionSupportsAudio() ? (
                 <Button variant="outline" size="sm" onClick={handleGoToVoiceSettings}>
                   <Settings className="h-4 w-4 mr-1" />
                   Valitse ääni
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" disabled>
+                  Ei ääntä
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={saveAsBookmark}>
