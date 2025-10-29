@@ -3,8 +3,9 @@ import { ELEVENLABS_VOICES, Voice } from './elevenLabsVoices';
 // Mapping of version codes to allowed voices
 // Finnish versions can use all voices, other languages may be restricted
 export const VERSION_ALLOWED_VOICES: Record<string, string[]> = {
-  // Finnish Bible version - all voices allowed
+  // Finnish Bible versions - all voices allowed
   'finstlk201': ELEVENLABS_VOICES.map(v => v.id),
+  'finpr_finn': ELEVENLABS_VOICES.map(v => v.id),
   
   // Add more versions and their allowed voices here
   // Example for an English version (if you add one):
