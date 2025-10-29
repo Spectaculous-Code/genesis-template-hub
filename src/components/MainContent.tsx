@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings } from "lucide-react";
 import BibleReader from "./BibleReader";
 import UserSummaries from "./UserSummaries";
 import UserHighlights from "./UserHighlights";
@@ -326,6 +326,15 @@ const MainContent = ({
     }
   };
 
+  const handleGoToVoiceSettings = () => {
+    navigate('/profile');
+  };
+
+  // Calculate current voice ID for audio controls
+  const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
+  const currentVoiceId = getVoiceForVersion(selectedVersion, currentVersionCode);
+  const hasAudioEnabled = currentVoiceId && currentVoiceId !== NO_AUDIO_VOICE_ID;
+
   const renderContent = () => {
     switch (currentView) {
       case 'summaries':
@@ -339,21 +348,14 @@ const MainContent = ({
         
         // Get user's voice preference for this version
         const voiceId = getVoiceForVersion(selectedVersion, currentVersionCode);
-        console.log('🔍 Debug - selectedVersion:', selectedVersion);
-        console.log('🔍 Debug - currentVersionCode:', currentVersionCode);
-        console.log('🔍 Debug - voiceId from getVoiceForVersion:', voiceId);
         
         // If voice is "no-audio", pass undefined as readerKey
         let readerKey: string | undefined;
         if (voiceId && voiceId !== NO_AUDIO_VOICE_ID) {
           const voice = getVoiceById(voiceId);
-          console.log('🔍 Debug - voice from getVoiceById:', voice);
           if (voice) {
             readerKey = getVoiceReaderKey(voice.voiceId);
-            console.log('🔍 Debug - final readerKey:', readerKey);
           }
-        } else {
-          console.log('🔍 Debug - voice is NO_AUDIO_VOICE_ID or undefined');
         }
         
         return (
@@ -445,9 +447,16 @@ const MainContent = ({
            {/* Audio Controls */}
           {currentView === 'bible' && (
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handlePlaybackToggle}>
-                <Play className="h-4 w-4" />
-              </Button>
+              {hasAudioEnabled ? (
+                <Button variant="outline" size="sm" onClick={handlePlaybackToggle}>
+                  <Play className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={handleGoToVoiceSettings}>
+                  <Settings className="h-4 w-4 mr-1" />
+                  Valitse ääni
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={saveAsBookmark}>
                 <Bookmark className="h-4 w-4" />
               </Button>
