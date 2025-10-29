@@ -339,14 +339,21 @@ const MainContent = ({
         
         // Get user's voice preference for this version
         const voiceId = getVoiceForVersion(selectedVersion, currentVersionCode);
+        console.log('🔍 Debug - selectedVersion:', selectedVersion);
+        console.log('🔍 Debug - currentVersionCode:', currentVersionCode);
+        console.log('🔍 Debug - voiceId from getVoiceForVersion:', voiceId);
         
         // If voice is "no-audio", pass undefined as readerKey
         let readerKey: string | undefined;
         if (voiceId && voiceId !== NO_AUDIO_VOICE_ID) {
           const voice = getVoiceById(voiceId);
+          console.log('🔍 Debug - voice from getVoiceById:', voice);
           if (voice) {
             readerKey = getVoiceReaderKey(voice.voiceId);
+            console.log('🔍 Debug - final readerKey:', readerKey);
           }
+        } else {
+          console.log('🔍 Debug - voice is NO_AUDIO_VOICE_ID or undefined');
         }
         
         return (
