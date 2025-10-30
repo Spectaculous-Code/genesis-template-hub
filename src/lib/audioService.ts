@@ -1,9 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export interface AudioCue {
+  verse_id: string;
+  start_ms: number;
+  end_ms: number;
+}
+
 export interface AudioGenerationResult {
   audio_id: string;
   file_url: string;
   duration_ms: number;
+  audio_cues?: AudioCue[];
 }
 
 /**
@@ -88,10 +95,23 @@ export const generateChapterAudio = async (
 
     console.log('Audio generated successfully:', data);
 
+    // Fetch audio cues for this audio
+    const { data: cuesData, error: cuesError } = await (supabase as any)
+      .schema('bible_schema')
+      .from('audio_cues')
+      .select('verse_id, start_ms, end_ms')
+      .eq('audio_id', data.audio_id)
+      .order('start_ms', { ascending: true });
+
+    if (cuesError) {
+      console.error('Error fetching audio cues:', cuesError);
+    }
+
     return {
       audio_id: data.audio_id,
       file_url: data.file_url,
-      duration_ms: data.duration_ms
+      duration_ms: data.duration_ms,
+      audio_cues: cuesData || []
     };
   } catch (error) {
     console.error('Error in generateChapterAudio:', error);

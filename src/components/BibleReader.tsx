@@ -47,6 +47,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   const [hasUserNavigated, setHasUserNavigated] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioCues, setAudioCues] = useState<Array<{verse_id: string; verse_number: number; start_ms: number; end_ms: number}>>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
@@ -198,10 +199,30 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
           setAudioUrl(audioData.file_url);
           
+          // Map audio cues to include verse numbers
+          if (audioData.audio_cues && chapterData) {
+            const cuesWithVerseNumbers = audioData.audio_cues.map(cue => {
+              const verse = chapterData.verses.find(v => v.id === cue.verse_id);
+              return {
+                ...cue,
+                verse_number: verse?.verse_number || 0
+              };
+            });
+            setAudioCues(cuesWithVerseNumbers);
+          }
+          
           // Wait for audio element to be ready
           if (audioRef.current) {
             audioRef.current.src = audioData.file_url;
             audioRef.current.load();
+          }
+        }
+        
+        // If targetVerse is set, seek to that verse
+        if (targetVerse && audioCues.length > 0 && audioRef.current) {
+          const cue = audioCues.find(c => c.verse_number === targetVerse);
+          if (cue) {
+            audioRef.current.currentTime = cue.start_ms / 1000;
           }
         }
         
@@ -227,7 +248,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     }
   };
 
-  // Handle audio ended event
+  // Handle audio ended event and time updates
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -246,18 +267,43 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       });
     };
 
+    const handleTimeUpdate = () => {
+      if (audioCues.length === 0) return;
+      
+      const currentTimeMs = audio.currentTime * 1000;
+      const currentCue = audioCues.find(
+        cue => currentTimeMs >= cue.start_ms && currentTimeMs < cue.end_ms
+      );
+      
+      if (currentCue && currentCue.verse_number !== currentVerse) {
+        setCurrentVerse(currentCue.verse_number);
+        
+        // Auto-scroll to current verse
+        const verseElement = document.getElementById(`verse-${currentCue.verse_number}`);
+        if (verseElement) {
+          verseElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }
+    };
+
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
 
     return () => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  }, [toast]);
+  }, [toast, audioCues, currentVerse]);
 
   // Reset audio when chapter or voice changes
   useEffect(() => {
     setAudioUrl(null);
+    setAudioCues([]);
     setIsPlaying(false);
     if (audioRef.current) {
       audioRef.current.pause();

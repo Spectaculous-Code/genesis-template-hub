@@ -46,6 +46,7 @@ serve(async (req) => {
 
     // Check if audio already exists
     const { data: existing } = await supabase
+      .schema('bible_schema')
       .from("audio_assets")
       .select("id, file_url, duration_ms")
       .eq("hash", hash)
@@ -53,20 +54,35 @@ serve(async (req) => {
 
     if (existing) {
       console.log(`Audio already exists for hash ${hash}`);
-      return new Response(
-        JSON.stringify({
-          audio_id: existing.id,
-          file_url: existing.file_url,
-          duration_ms: existing.duration_ms,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      
+      // Check if audio cues exist for this audio
+      const { data: cuesCheck } = await supabase
+        .schema('bible_schema')
+        .from("audio_cues")
+        .select("id")
+        .eq("audio_id", existing.id)
+        .limit(1);
+
+      // If cues don't exist, we need to regenerate them
+      if (!cuesCheck || cuesCheck.length === 0) {
+        console.log(`Audio cues missing for audio ${existing.id}, will regenerate`);
+      } else {
+        return new Response(
+          JSON.stringify({
+            audio_id: existing.id,
+            file_url: existing.file_url,
+            duration_ms: existing.duration_ms,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Fetch chapter verses
     const { data: verses, error: versesError } = await supabase
+      .schema('bible_schema')
       .from("verses")
-      .select("verse_number, text")
+      .select("id, verse_number, text")
       .eq("chapter_id", chapter_id)
       .eq("version_id", version_id)
       .eq("is_superseded", false)
@@ -149,6 +165,7 @@ serve(async (req) => {
 
     // Insert metadata
     const { data: audioAsset, error: insertError } = await supabase
+      .schema('bible_schema')
       .from("audio_assets")
       .insert({
         hash,
@@ -167,6 +184,36 @@ serve(async (req) => {
     if (insertError) {
       console.error("Insert error:", insertError);
       throw new Error(`Failed to save metadata: ${insertError.message}`);
+    }
+
+    // Create audio cues for verse timing
+    // Calculate approximate timing based on character count
+    let currentTimeMs = 0;
+    const totalChars = verses.reduce((sum, v) => sum + v.text.length, 0);
+    const msPerChar = duration_ms / totalChars;
+
+    const audioCues = verses.map((verse) => {
+      const verseChars = verse.text.length;
+      const verseDuration = Math.round(verseChars * msPerChar);
+      const cue = {
+        audio_id: audioAsset.id,
+        verse_id: verse.id,
+        start_ms: currentTimeMs,
+        end_ms: currentTimeMs + verseDuration,
+      };
+      currentTimeMs += verseDuration;
+      return cue;
+    });
+
+    // Insert audio cues
+    const { error: cuesError } = await supabase
+      .schema('bible_schema')
+      .from("audio_cues")
+      .insert(audioCues);
+
+    if (cuesError) {
+      console.error("Error inserting audio cues:", cuesError);
+      // Don't fail the request if cues fail, just log it
     }
 
     console.log(`Audio generated successfully: ${file_url}`);
