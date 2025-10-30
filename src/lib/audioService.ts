@@ -27,6 +27,17 @@ export const generateChapterAudio = async (
   readerKey: string = 'elevenlabs:9BWtsMINqrJLrRacOk9x' // Default to Aria voice
 ): Promise<AudioGenerationResult> => {
   try {
+    // Validate inputs
+    if (!bookName || bookName.trim() === '') {
+      throw new Error('Book name is required');
+    }
+    if (!chapterNumber || chapterNumber < 1) {
+      throw new Error('Valid chapter number is required');
+    }
+    if (!versionCode || versionCode.trim() === '') {
+      throw new Error('Version code is required');
+    }
+
     console.log('Generating audio for:', { bookName, chapterNumber, versionCode, readerKey });
 
     // Get version_id

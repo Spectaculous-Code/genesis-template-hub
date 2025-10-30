@@ -62,6 +62,24 @@ const IndexContent = () => {
     }
   }, [location.search]);
 
+  // Set default book if none selected and no latest position
+  useEffect(() => {
+    if (!selectedBook && latestPosition === null) {
+      // Set Genesis 1 as default when app loads with no saved position
+      setSelectedBook('Genesis');
+      setSelectedChapter(1);
+      setCurrentView('bible');
+    } else if (!selectedBook && latestPosition) {
+      // Set latest position if available
+      setSelectedBook(latestPosition.bookName);
+      setSelectedChapter(latestPosition.chapter);
+      if (latestPosition.verse) {
+        setTargetVerse(latestPosition.verse);
+      }
+      setCurrentView('bible');
+    }
+  }, [selectedBook, latestPosition]);
+
   const handleBookSelect = (book: string) => {
     setSelectedBook(book);
     setTargetVerse(undefined);

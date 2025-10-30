@@ -163,6 +163,16 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   }, [targetVerse, chapterData]);
 
   const togglePlayback = async () => {
+    // Check if book is selected
+    if (!book || book.trim() === '') {
+      toast({
+        title: "Virhe",
+        description: "Valitse ensin Raamatun kirja",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Check if audio is disabled for this version
     if (!readerKey) {
       toast({
