@@ -142,10 +142,11 @@ const VerseHighlighter = ({
     <div 
       id={`verse-${verse.number}`}
       className={`
-        group relative p-3 rounded-lg transition-all duration-200 cursor-pointer
-        ${isCurrentVerse ? 'bg-primary/10 border border-primary/20' : ''}
-        ${isHighlighted ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}
-        hover:bg-accent/50
+        group relative p-3 rounded-lg transition-all duration-300 cursor-pointer
+        scroll-mt-24
+        ${isCurrentVerse ? 'bg-[hsl(var(--active-verse))]/15 border-2 border-[hsl(var(--active-verse))] ring-4 ring-[hsl(var(--active-verse))]/20 shadow-lg' : ''}
+        ${isHighlighted && !isCurrentVerse ? 'bg-yellow-100 dark:bg-yellow-900/30' : ''}
+        ${!isCurrentVerse && !isHighlighted ? 'hover:bg-accent/50' : ''}
       `}
       onClick={onVerseClick}
       onMouseEnter={() => setShowActions(true)}
