@@ -451,7 +451,7 @@ const MainContent = ({
           </div>
 
            {/* Audio Controls */}
-          {currentView === 'bible' && (
+          {currentView === 'bible' && selectedBook && (
             <div className="flex items-center gap-2">
               {hasAudioEnabled ? (
                 <Button variant="outline" size="sm" onClick={handlePlaybackToggle}>
