@@ -25,6 +25,7 @@ interface BibleReaderProps {
   onNavigationComplete?: () => void;
   isFromLatestPosition?: boolean;
   onPlaybackStateChange?: (isPlaying: boolean) => void;
+  onLoadingStateChange?: (isLoading: boolean) => void;
 }
 
 export interface BibleReaderHandle {
@@ -32,7 +33,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -201,6 +202,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       // Start audio
       try {
         setIsLoadingAudio(true);
+        onLoadingStateChange?.(true);
         
         // Generate or fetch audio if not already loaded
         if (!audioUrl) {
@@ -258,6 +260,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         });
       } finally {
         setIsLoadingAudio(false);
+        onLoadingStateChange?.(false);
       }
     }
   };

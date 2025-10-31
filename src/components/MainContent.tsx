@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2 } from "lucide-react";
 import BibleReader from "./BibleReader";
 import UserSummaries from "./UserSummaries";
 import UserHighlights from "./UserHighlights";
@@ -59,6 +59,7 @@ const MainContent = ({
   const [isFromLatestPosition, setIsFromLatestPosition] = useState(false);
   const [hasManuallyNavigated, setHasManuallyNavigated] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const bibleReaderRef = useRef<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -381,6 +382,7 @@ const MainContent = ({
             onNavigationComplete={onNavigationComplete}
             isFromLatestPosition={isFromLatestPosition}
             onPlaybackStateChange={setIsPlaying}
+            onLoadingStateChange={setIsLoadingAudio}
             ref={bibleReaderRef}
           />
         );
@@ -457,8 +459,14 @@ const MainContent = ({
           {currentView === 'bible' && selectedBook && (
             <div className="flex items-center gap-2">
                {hasAudioEnabled ? (
-                <Button variant="outline" size="sm" onClick={handlePlaybackToggle}>
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                <Button variant="outline" size="sm" onClick={handlePlaybackToggle} disabled={isLoadingAudio}>
+                  {isLoadingAudio ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
                 </Button>
               ) : versionSupportsAudio() ? (
                 <Button variant="outline" size="sm" onClick={handleGoToVoiceSettings}>
