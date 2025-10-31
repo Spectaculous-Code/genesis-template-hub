@@ -63,7 +63,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   useImperativeHandle(ref, () => ({
     togglePlayback,
     isPlaying
-  }), [isPlaying]);
+  }), [isPlaying, book, chapter, readerKey]);
 
   // Remove the saveReadingPosition function as it's no longer needed for auto-save
   // Only explicit bookmark saves are done in MainContent.tsx
@@ -163,6 +163,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   }, [targetVerse, chapterData]);
 
   const togglePlayback = async () => {
+    console.log('togglePlayback invoked with', { book, chapter, readerKey });
     // Check if book is selected
     if (!book || book.trim() === '') {
       toast({
