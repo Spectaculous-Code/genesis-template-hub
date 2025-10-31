@@ -90,9 +90,9 @@ serve(async (req) => {
       throw new Error("No verses found for this chapter");
     }
 
-    // Combine verses into one text
+    // Combine verses into one text (without verse numbers)
     const fullText = verses
-      .map((v) => `${v.verse_number}. ${v.text}`)
+      .map((v) => v.text)
       .join(" ");
 
     console.log(`Generating TTS for ${verses.length} verses using ${reader_key}`);
