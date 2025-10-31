@@ -46,7 +46,6 @@ serve(async (req) => {
 
     // Check if audio already exists
     const { data: existing } = await supabase
-      .schema('bible_schema')
       .from("audio_assets")
       .select("id, file_url, duration_ms")
       .eq("hash", hash)
@@ -57,7 +56,6 @@ serve(async (req) => {
       
       // Check if audio cues exist for this audio
       const { data: cuesCheck } = await supabase
-        .schema('bible_schema')
         .from("audio_cues")
         .select("id")
         .eq("audio_id", existing.id)
@@ -165,7 +163,6 @@ serve(async (req) => {
 
     // Insert metadata
     const { data: audioAsset, error: insertError } = await supabase
-      .schema('bible_schema')
       .from("audio_assets")
       .insert({
         hash,
@@ -207,7 +204,6 @@ serve(async (req) => {
 
     // Insert audio cues
     const { error: cuesError } = await supabase
-      .schema('bible_schema')
       .from("audio_cues")
       .insert(audioCues);
 

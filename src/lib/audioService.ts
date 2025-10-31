@@ -107,8 +107,7 @@ export const generateChapterAudio = async (
     console.log('Audio generated successfully:', data);
 
     // Fetch audio cues for this audio
-    const { data: cuesData, error: cuesError } = await (supabase as any)
-      .schema('bible_schema')
+    const { data: cuesData, error: cuesError } = await supabase
       .from('audio_cues')
       .select('verse_id, start_ms, end_ms')
       .eq('audio_id', data.audio_id)
