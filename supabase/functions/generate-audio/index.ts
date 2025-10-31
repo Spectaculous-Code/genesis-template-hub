@@ -142,7 +142,7 @@ serve(async (req) => {
       .from("audio-chapters")
       .upload(filePath, audioBuffer, {
         contentType: "audio/mpeg",
-        upsert: false,
+        upsert: true, // Allow overwriting if file exists
       });
 
     if (uploadError) {
