@@ -63,36 +63,7 @@ export type Database = {
           version_id?: string
           voice?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "audio_assets_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_mv"
-            referencedColumns: ["chapter_id"]
-          },
-          {
-            foreignKeyName: "audio_assets_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_user_v"
-            referencedColumns: ["chapter_id"]
-          },
-          {
-            foreignKeyName: "audio_assets_chapter_id_fkey"
-            columns: ["chapter_id"]
-            isOneToOne: false
-            referencedRelation: "chapters"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "audio_assets_version_id_fkey"
-            columns: ["version_id"]
-            isOneToOne: false
-            referencedRelation: "bible_versions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       audio_cues: {
         Row: {
@@ -506,62 +477,6 @@ export type Database = {
           transliterations?: string[] | null
         }
         Relationships: []
-      }
-      strongs_mappings: {
-        Row: {
-          created_at: string
-          id: string
-          strongs_number: string
-          verse_id: string
-          word_order: number
-          word_text: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          strongs_number: string
-          verse_id: string
-          word_order: number
-          word_text: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          strongs_number?: string
-          verse_id?: string
-          word_order?: number
-          word_text?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "strongs_mappings_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_mv"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "strongs_mappings_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_user_v"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "strongs_mappings_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "user_verse_counts_v"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "strongs_mappings_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "verses"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       summaries: {
         Row: {
