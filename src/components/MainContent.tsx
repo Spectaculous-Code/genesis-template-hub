@@ -58,6 +58,7 @@ const MainContent = ({
   const [selectedVersion, setSelectedVersion] = useState<string>("");
   const [isFromLatestPosition, setIsFromLatestPosition] = useState(false);
   const [hasManuallyNavigated, setHasManuallyNavigated] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const bibleReaderRef = useRef<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -323,6 +324,7 @@ const MainContent = ({
   const handlePlaybackToggle = () => {
     if (bibleReaderRef.current) {
       bibleReaderRef.current.togglePlayback();
+      // State will be updated via onPlaybackStateChange callback
     }
   };
 
@@ -378,6 +380,7 @@ const MainContent = ({
             isAppTitleNavigation={isAppTitleNavigation}
             onNavigationComplete={onNavigationComplete}
             isFromLatestPosition={isFromLatestPosition}
+            onPlaybackStateChange={setIsPlaying}
             ref={bibleReaderRef}
           />
         );
@@ -453,9 +456,9 @@ const MainContent = ({
            {/* Audio Controls */}
           {currentView === 'bible' && selectedBook && (
             <div className="flex items-center gap-2">
-              {hasAudioEnabled ? (
+               {hasAudioEnabled ? (
                 <Button variant="outline" size="sm" onClick={handlePlaybackToggle}>
-                  <Play className="h-4 w-4" />
+                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 </Button>
               ) : versionSupportsAudio() ? (
                 <Button variant="outline" size="sm" onClick={handleGoToVoiceSettings}>

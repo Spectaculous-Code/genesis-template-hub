@@ -24,6 +24,7 @@ interface BibleReaderProps {
   isAppTitleNavigation?: boolean;
   onNavigationComplete?: () => void;
   isFromLatestPosition?: boolean;
+  onPlaybackStateChange?: (isPlaying: boolean) => void;
 }
 
 export interface BibleReaderHandle {
@@ -31,7 +32,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -191,6 +192,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         audioRef.current.pause();
       }
       setIsPlaying(false);
+      onPlaybackStateChange?.(false);
       toast({
         title: "Toisto pysäytetty",
         description: `${getFinnishBookName(book)} ${chapter}`,
@@ -241,6 +243,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         if (audioRef.current) {
           await audioRef.current.play();
           setIsPlaying(true);
+          onPlaybackStateChange?.(true);
           toast({
             title: "Toisto aloitettu",
             description: `${getFinnishBookName(book)} ${chapter}`,
@@ -266,11 +269,13 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
 
     const handleEnded = () => {
       setIsPlaying(false);
+      onPlaybackStateChange?.(false);
     };
 
     const handleError = (e: Event) => {
       console.error('Audio playback error:', e);
       setIsPlaying(false);
+      onPlaybackStateChange?.(false);
       toast({
         title: "Virhe",
         description: "Äänen toistamisessa tapahtui virhe",
@@ -316,6 +321,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     setAudioUrl(null);
     setAudioCues([]);
     setIsPlaying(false);
+    onPlaybackStateChange?.(false);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
