@@ -51,13 +51,69 @@ serve(async (req) => {
           continue;
         }
 
-        // Fetch verses for this chapter
-        const { data: verses, error: versesError } = await supabase
+        // Get chapter info from bible_schema to find the corresponding public.verses
+        const { data: chapterInfo, error: chapterError } = await supabase
           .schema('bible_schema')
+          .from("chapters")
+          .select("chapter_number, book_id, books!inner(name, version_id, bible_versions!inner(code))")
+          .eq("id", asset.chapter_id)
+          .single();
+
+        if (chapterError || !chapterInfo) {
+          console.error(`Failed to get chapter info for audio ${asset.id}:`, chapterError);
+          results.errors++;
+          continue;
+        }
+
+        // Get the version code from bible_schema
+        const versionCode = (chapterInfo.books as any).bible_versions.code;
+        
+        // Find the corresponding version in public schema by code
+        const { data: publicVersion } = await supabase
+          .from("bible_versions")
+          .select("id")
+          .ilike("code", `${versionCode}%`) // Use ilike with wildcard since codes might differ slightly
+          .single();
+
+        if (!publicVersion) {
+          console.error(`Version not found in public schema for code ${versionCode}`);
+          results.errors++;
+          continue;
+        }
+
+        // Find corresponding public book using version_id from public schema
+        const { data: publicBook } = await supabase
+          .from("books")
+          .select("id")
+          .eq("name", (chapterInfo.books as any).name)
+          .eq("version_id", publicVersion.id)
+          .single();
+
+        if (!publicBook) {
+          console.error(`Book not found in public schema for audio ${asset.id}`);
+          results.errors++;
+          continue;
+        }
+
+        const { data: publicChapterData } = await supabase
+          .from("chapters")
+          .select("id")
+          .eq("book_id", publicBook.id)
+          .eq("chapter_number", chapterInfo.chapter_number)
+          .single();
+
+        if (!publicChapterData) {
+          console.error(`Chapter not found in public schema for audio ${asset.id}`);
+          results.errors++;
+          continue;
+        }
+
+        // Fetch verses from public.verses using the public chapter_id and version_id
+        const { data: verses, error: versesError } = await supabase
           .from("verses")
           .select("id, verse_number, text")
-          .eq("chapter_id", asset.chapter_id)
-          .eq("version_id", asset.version_id)
+          .eq("chapter_id", publicChapterData.id)
+          .eq("version_id", publicVersion.id)
           .eq("is_superseded", false)
           .order("verse_number", { ascending: true });
 
