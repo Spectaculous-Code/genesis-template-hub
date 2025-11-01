@@ -188,15 +188,80 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     }
 
     if (isPlaying) {
-      // Pause audio
+      // Pause audio and save listening position
       if (audioRef.current) {
         audioRef.current.pause();
       }
       setIsPlaying(false);
       onPlaybackStateChange?.(false);
+      
+      // Save the listening position when paused
+      if (user && chapterData) {
+        const currentVerseData = chapterData.verses.find(v => v.verse_number === currentVerse);
+        if (currentVerseData) {
+          // Fetch book_id and version_id
+          (async () => {
+            try {
+              const { data: versionData } = await (supabase as any)
+                .schema('bible_schema')
+                .from('bible_versions')
+                .select('id')
+                .eq('code', versionCode)
+                .single();
+              
+              if (!versionData) {
+                console.error('Version not found');
+                return;
+              }
+
+              const { data: bookData } = await (supabase as any)
+                .schema('bible_schema')
+                .from('books')
+                .select('id')
+                .eq('name', book)
+                .eq('version_id', versionData.id)
+                .single();
+              
+              if (!bookData) {
+                console.error('Book not found');
+                return;
+              }
+
+              const { data: chapterDbData } = await (supabase as any)
+                .schema('bible_schema')
+                .from('chapters')
+                .select('id')
+                .eq('book_id', bookData.id)
+                .eq('chapter_number', chapter)
+                .single();
+
+              await supabase
+                .from('user_reading_history')
+                .upsert({
+                  user_id: user.id,
+                  book_id: bookData.id,
+                  chapter_id: chapterDbData?.id,
+                  chapter_number: chapter,
+                  verse_number: currentVerse,
+                  verse_id: currentVerseData.id,
+                  version_id: versionData.id,
+                  history_type: 'listen',
+                  last_read_at: new Date().toISOString()
+                }, {
+                  onConflict: 'user_id,book_id,chapter_number,history_type'
+                });
+              
+              console.log('Listening position saved:', { book, chapter, verse: currentVerse });
+            } catch (error) {
+              console.error('Error saving listening position:', error);
+            }
+          })();
+        }
+      }
+      
       toast({
         title: "Toisto pysäytetty",
-        description: `${getFinnishBookName(book)} ${chapter}`,
+        description: `${getFinnishBookName(book)} ${chapter}:${currentVerse}`,
       });
     } else {
       // Start audio
