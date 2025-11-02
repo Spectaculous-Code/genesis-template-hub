@@ -65,87 +65,47 @@ serve(async (req) => {
       if (!cuesCheck || cuesCheck.length === 0) {
         console.log(`Audio cues missing for audio ${existing.id}, regenerating cues`);
         
-        // Get chapter info from bible_schema to find corresponding public.verses
-        const { data: chapterInfo, error: chapterError } = await supabase
+        // Fetch verses directly from bible_schema
+        const { data: verses, error: versesError } = await supabase
           .schema('bible_schema')
-          .from("chapters")
-          .select("chapter_number, book_id, books!inner(name, bible_versions!inner(code))")
-          .eq("id", chapter_id)
-          .single();
+          .from("verses")
+          .select("id, verse_number, text")
+          .eq("chapter_id", chapter_id)
+          .eq("version_id", version_id)
+          .eq("is_superseded", false)
+          .order("verse_number", { ascending: true });
 
-        if (!chapterError && chapterInfo) {
-          // Get the version code from bible_schema
-          const versionCode = (chapterInfo.books as any).bible_versions.code;
+        if (!versesError && verses && verses.length > 0) {
+          // Calculate duration from existing audio or estimate
+          const duration_ms = existing.duration_ms || Math.round((verses.reduce((sum, v) => sum + v.text.length, 0) / 5 / 150) * 60 * 1000);
           
-          // Find the corresponding version in public schema by code
-          const { data: publicVersion } = await supabase
-            .from("bible_versions")
-            .select("id")
-            .ilike("code", `${versionCode}%`)
-            .single();
+          // Calculate approximate timing based on character count
+          let currentTimeMs = 0;
+          const totalChars = verses.reduce((sum, v) => sum + v.text.length, 0);
+          const msPerChar = duration_ms / totalChars;
 
-          if (publicVersion) {
-            // Find corresponding public book
-            const { data: publicBook } = await supabase
-              .from("books")
-              .select("id")
-              .eq("name", (chapterInfo.books as any).name)
-              .eq("version_id", publicVersion.id)
-              .single();
+          const audioCues = verses.map((verse) => {
+            const verseChars = verse.text.length;
+            const verseDuration = Math.round(verseChars * msPerChar);
+            const cue = {
+              audio_id: existing.id,
+              verse_id: verse.id,
+              start_ms: currentTimeMs,
+              end_ms: currentTimeMs + verseDuration,
+            };
+            currentTimeMs += verseDuration;
+            return cue;
+          });
 
-            if (publicBook) {
-              const { data: publicChapterData } = await supabase
-                .from("chapters")
-                .select("id")
-                .eq("book_id", publicBook.id)
-                .eq("chapter_number", chapterInfo.chapter_number)
-                .single();
+          // Insert audio cues
+          const { error: cuesError } = await supabase
+            .from("audio_cues")
+            .insert(audioCues);
 
-              if (publicChapterData) {
-                // Fetch verses from public.verses
-                const { data: verses, error: versesError } = await supabase
-                  .from("verses")
-                  .select("id, verse_number, text")
-                  .eq("chapter_id", publicChapterData.id)
-                  .eq("version_id", publicVersion.id)
-                  .eq("is_superseded", false)
-                  .order("verse_number", { ascending: true });
-
-                if (!versesError && verses && verses.length > 0) {
-                  // Calculate duration from existing audio or estimate
-                  const duration_ms = existing.duration_ms || Math.round((verses.reduce((sum, v) => sum + v.text.length, 0) / 5 / 150) * 60 * 1000);
-                  
-                  // Calculate approximate timing based on character count
-                  let currentTimeMs = 0;
-                  const totalChars = verses.reduce((sum, v) => sum + v.text.length, 0);
-                  const msPerChar = duration_ms / totalChars;
-
-                  const audioCues = verses.map((verse) => {
-                    const verseChars = verse.text.length;
-                    const verseDuration = Math.round(verseChars * msPerChar);
-                    const cue = {
-                      audio_id: existing.id,
-                      verse_id: verse.id,
-                      start_ms: currentTimeMs,
-                      end_ms: currentTimeMs + verseDuration,
-                    };
-                    currentTimeMs += verseDuration;
-                    return cue;
-                  });
-
-                  // Insert audio cues
-                  const { error: cuesError } = await supabase
-                    .from("audio_cues")
-                    .insert(audioCues);
-
-                  if (cuesError) {
-                    console.error("Error inserting audio cues:", cuesError);
-                  } else {
-                    console.log(`Successfully regenerated ${audioCues.length} audio cues`);
-                  }
-                }
-              }
-            }
+          if (cuesError) {
+            console.error("Error inserting audio cues:", cuesError);
+          } else {
+            console.log(`Successfully regenerated ${audioCues.length} audio cues`);
           }
         }
       }
@@ -160,61 +120,13 @@ serve(async (req) => {
       );
     }
 
-    // Get chapter info from bible_schema to find corresponding public.verses
-    const { data: chapterInfo, error: chapterError } = await supabase
-      .schema('bible_schema')
-      .from("chapters")
-      .select("chapter_number, book_id, books!inner(name, bible_versions!inner(code))")
-      .eq("id", chapter_id)
-      .single();
-
-    if (chapterError || !chapterInfo) {
-      throw new Error("Chapter not found in bible_schema");
-    }
-
-    // Get the version code from bible_schema
-    const versionCodeFromBibleSchema = (chapterInfo.books as any).bible_versions.code;
-    
-    // Find the corresponding version in public schema by code
-    const { data: publicVersion } = await supabase
-      .from("bible_versions")
-      .select("id")
-      .ilike("code", `${versionCodeFromBibleSchema}%`)
-      .single();
-
-    if (!publicVersion) {
-      throw new Error(`Version not found in public schema for code ${versionCodeFromBibleSchema}`);
-    }
-
-    // Find corresponding public book
-    const { data: publicBook } = await supabase
-      .from("books")
-      .select("id")
-      .eq("name", (chapterInfo.books as any).name)
-      .eq("version_id", publicVersion.id)
-      .single();
-
-    if (!publicBook) {
-      throw new Error("Book not found in public schema");
-    }
-
-    const { data: publicChapterData } = await supabase
-      .from("chapters")
-      .select("id")
-      .eq("book_id", publicBook.id)
-      .eq("chapter_number", chapterInfo.chapter_number)
-      .single();
-
-    if (!publicChapterData) {
-      throw new Error("Chapter not found in public schema");
-    }
-
-    // Fetch verses from public.verses  
+    // Fetch verses directly from bible_schema
     const { data: verses, error: versesError } = await supabase
+      .schema('bible_schema')
       .from("verses")
       .select("id, verse_number, text")
-      .eq("chapter_id", publicChapterData.id)
-      .eq("version_id", publicVersion.id)
+      .eq("chapter_id", chapter_id)
+      .eq("version_id", version_id)
       .eq("is_superseded", false)
       .order("verse_number", { ascending: true });
 
