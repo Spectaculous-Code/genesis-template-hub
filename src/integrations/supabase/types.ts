@@ -95,34 +95,6 @@ export type Database = {
             referencedRelation: "audio_assets"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "audio_cues_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_mv"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "audio_cues_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "chapter_verses_user_v"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "audio_cues_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "user_verse_counts_v"
-            referencedColumns: ["verse_id"]
-          },
-          {
-            foreignKeyName: "audio_cues_verse_id_fkey"
-            columns: ["verse_id"]
-            isOneToOne: false
-            referencedRelation: "verses"
-            referencedColumns: ["id"]
-          },
         ]
       }
       bible_versions: {
