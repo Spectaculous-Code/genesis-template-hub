@@ -376,9 +376,46 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     const audio = audioRef.current;
     if (!audio) return;
 
-    const handleEnded = () => {
+    const handleEnded = async () => {
       setIsPlaying(false);
       onPlaybackStateChange?.(false);
+      
+      // Try to navigate to next chapter and continue playback
+      try {
+        const nextChapterData = await getNextChapter(book, chapter, versionCode);
+        
+        if (nextChapterData) {
+          setIsNavigating(true);
+          setHasUserNavigated(true);
+          
+          onBookSelect(nextChapterData.book);
+          onChapterSelect(nextChapterData.chapter);
+          
+          toast({
+            title: "Siirtyminen seuraavaan lukuun",
+            description: `${getFinnishBookName(nextChapterData.book)} ${nextChapterData.chapter}`,
+          });
+          
+          // Wait a moment for the chapter to load, then start playback
+          setTimeout(() => {
+            if (readerKey) {
+              togglePlayback();
+            }
+          }, 1000);
+        } else {
+          toast({
+            title: "Luku päättyi",
+            description: "Tämä oli viimeinen luku",
+          });
+        }
+      } catch (error) {
+        console.error('Error navigating to next chapter:', error);
+        toast({
+          title: "Luku päättyi",
+          description: "Automaattinen siirtyminen seuraavaan lukuun epäonnistui",
+          variant: "destructive"
+        });
+      }
     };
 
     const handleError = (e: Event) => {
