@@ -627,6 +627,97 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     }
   };
 
+  const playFromVerse = async (verseNumber: number) => {
+    try {
+      // First, ensure audio is loaded
+      if (!audioUrl || !readerKey) {
+        // Load audio if not already loaded
+        setIsLoadingAudio(true);
+        onLoadingStateChange?.(true);
+        
+        toast({
+          title: "Ladataan ääntä...",
+          description: `${getFinnishBookName(book)} ${chapter}`,
+        });
+        
+        const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
+        setAudioUrl(audioData.file_url);
+        
+        // Map audio cues to include verse numbers
+        if (audioData.audio_cues && chapterData) {
+          const cuesWithVerseNumbers = audioData.audio_cues.map(cue => {
+            const verse = chapterData.verses.find(v => v.id === cue.verse_id);
+            return {
+              ...cue,
+              verse_number: verse?.verse_number || 0
+            };
+          });
+          setAudioCues(cuesWithVerseNumbers);
+          
+          // Now seek and play
+          if (audioRef.current) {
+            audioRef.current.src = audioData.file_url;
+            audioRef.current.load();
+            
+            // Wait for metadata to load
+            audioRef.current.onloadedmetadata = () => {
+              const cue = cuesWithVerseNumbers.find(c => c.verse_number === verseNumber);
+              if (cue && audioRef.current) {
+                audioRef.current.currentTime = cue.start_ms / 1000;
+                audioRef.current.play().then(() => {
+                  setIsPlaying(true);
+                  onPlaybackStateChange?.(true);
+                  toast({
+                    title: "Toisto aloitettu",
+                    description: `${getFinnishBookName(book)} ${chapter}:${verseNumber}`,
+                  });
+                }).catch(error => {
+                  console.error('Error playing audio:', error);
+                  toast({
+                    title: "Virhe",
+                    description: "Äänen toistaminen epäonnistui",
+                    variant: "destructive"
+                  });
+                });
+              }
+            };
+          }
+        }
+        
+        setIsLoadingAudio(false);
+        onLoadingStateChange?.(false);
+      } else {
+        // Audio already loaded, just seek and play
+        if (audioCues.length > 0 && audioRef.current) {
+          const cue = audioCues.find(c => c.verse_number === verseNumber);
+          if (cue) {
+            audioRef.current.currentTime = cue.start_ms / 1000;
+            
+            if (!isPlaying) {
+              await audioRef.current.play();
+              setIsPlaying(true);
+              onPlaybackStateChange?.(true);
+            }
+            
+            toast({
+              title: "Toisto aloitettu",
+              description: `${getFinnishBookName(book)} ${chapter}:${verseNumber}`,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error playing from verse:', error);
+      toast({
+        title: "Virhe",
+        description: "Toiston aloittaminen epäonnistui",
+        variant: "destructive"
+      });
+      setIsLoadingAudio(false);
+      onLoadingStateChange?.(false);
+    }
+  };
+
   const navigateChapter = async (direction: 'prev' | 'next') => {
     try {
       let navigationData;
@@ -737,6 +828,11 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
               onVerseClick={() => {
                 setCurrentVerse(verse.verse_number);
                 onVerseSelect(book, chapter, verse.verse_number, verse.text);
+                
+                // Start playback from clicked verse if readerKey is available
+                if (readerKey) {
+                  playFromVerse(verse.verse_number);
+                }
               }}
               book={book}
               chapter={chapter}
