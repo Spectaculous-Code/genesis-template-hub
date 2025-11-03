@@ -197,24 +197,39 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       
       // Save the listening position when paused
       if (user && chapterData) {
+        console.log('=== ATTEMPTING TO SAVE LISTENING POSITION ===');
+        console.log('User:', user?.id);
+        console.log('Current verse:', currentVerse);
+        console.log('Book:', book, 'Chapter:', chapter);
+        
         const currentVerseData = chapterData.verses.find(v => v.verse_number === currentVerse);
         if (currentVerseData) {
+          console.log('Current verse data found:', currentVerseData.id);
           // Fetch book_id and version_id
           (async () => {
             try {
-              const { data: versionData } = await (supabase as any)
+              console.log('Fetching version data for code:', versionCode);
+              const { data: versionData, error: versionError } = await (supabase as any)
                 .schema('bible_schema')
                 .from('bible_versions')
                 .select('id')
                 .eq('code', versionCode)
                 .single();
               
+              if (versionError) {
+                console.error('Error fetching version:', versionError);
+                return;
+              }
+              
               if (!versionData) {
                 console.error('Version not found');
                 return;
               }
+              
+              console.log('Version data:', versionData);
 
-              const { data: bookData } = await (supabase as any)
+              console.log('Fetching book data for book:', book);
+              const { data: bookData, error: bookError } = await (supabase as any)
                 .schema('bible_schema')
                 .from('books')
                 .select('id')
@@ -222,40 +237,66 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
                 .eq('version_id', versionData.id)
                 .single();
               
+              if (bookError) {
+                console.error('Error fetching book:', bookError);
+                return;
+              }
+              
               if (!bookData) {
                 console.error('Book not found');
                 return;
               }
+              
+              console.log('Book data:', bookData);
 
-              const { data: chapterDbData } = await (supabase as any)
+              console.log('Fetching chapter data');
+              const { data: chapterDbData, error: chapterError } = await (supabase as any)
                 .schema('bible_schema')
                 .from('chapters')
                 .select('id')
                 .eq('book_id', bookData.id)
                 .eq('chapter_number', chapter)
                 .single();
-
-              await supabase
-                .from('user_reading_history')
-                .upsert({
-                  user_id: user.id,
-                  book_id: bookData.id,
-                  chapter_id: chapterDbData?.id,
-                  chapter_number: chapter,
-                  verse_number: currentVerse,
-                  verse_id: currentVerseData.id,
-                  version_id: versionData.id,
-                  history_type: 'listen',
-                  last_read_at: new Date().toISOString()
-                }, {
-                  onConflict: 'user_id,book_id,chapter_number,history_type'
-                });
               
-              console.log('Listening position saved:', { book, chapter, verse: currentVerse });
+              if (chapterError) {
+                console.error('Error fetching chapter:', chapterError);
+                return;
+              }
+              
+              console.log('Chapter data:', chapterDbData);
+
+              const historyData = {
+                user_id: user.id,
+                book_id: bookData.id,
+                chapter_id: chapterDbData?.id,
+                chapter_number: chapter,
+                verse_number: currentVerse,
+                verse_id: currentVerseData.id,
+                version_id: versionData.id,
+                history_type: 'listen' as const,
+                last_read_at: new Date().toISOString()
+              };
+              
+              console.log('Upserting history data:', historyData);
+
+              const { data: upsertResult, error: upsertError } = await supabase
+                .from('user_reading_history')
+                .upsert([historyData], {
+                  onConflict: 'user_id,book_id,chapter_number,history_type'
+                })
+                .select();
+              
+              if (upsertError) {
+                console.error('Error upserting listening position:', upsertError);
+              } else {
+                console.log('Listening position saved successfully:', upsertResult);
+              }
             } catch (error) {
               console.error('Error saving listening position:', error);
             }
           })();
+        } else {
+          console.log('Current verse data NOT found for verse:', currentVerse);
         }
       }
       

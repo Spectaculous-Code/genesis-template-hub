@@ -87,15 +87,9 @@ export function AppSidebar({
       if (!user) return;
 
       // Fetch last audio position
-      const { data: audioHistory } = await supabase
+      const { data: audioHistory, error: audioError } = await supabase
         .from('user_reading_history')
-        .select(`
-          chapter_number,
-          verse_number,
-          version_id,
-          books!inner(name),
-          bible_versions!inner(code)
-        `)
+        .select('chapter_number, verse_number, version_id, book_id')
         .eq('user_id', user.id)
         .eq('history_type', 'listen')
         .order('last_read_at', { ascending: false })
@@ -103,15 +97,33 @@ export function AppSidebar({
 
       if (audioHistory && audioHistory.length > 0) {
         const record = audioHistory[0];
-        const bookName = getFinnishBookName(record.books.name);
-        setLastAudioPosition({
-          text: `${bookName} ${record.chapter_number}:${record.verse_number}`,
-          version: record.bible_versions.code,
-          bookName: record.books.name,
-          chapter: record.chapter_number,
-          verse: record.verse_number,
-          versionId: record.version_id
-        });
+        
+        // Fetch book and version info from bible_schema
+        const { data: bookData } = await (supabase as any)
+          .schema('bible_schema')
+          .from('books')
+          .select('name')
+          .eq('id', record.book_id)
+          .single();
+        
+        const { data: versionData } = await (supabase as any)
+          .schema('bible_schema')
+          .from('bible_versions')
+          .select('code')
+          .eq('id', record.version_id)
+          .single();
+        
+        if (bookData && versionData) {
+          const bookName = getFinnishBookName(bookData.name);
+          setLastAudioPosition({
+            text: `${bookName} ${record.chapter_number}:${record.verse_number}`,
+            version: versionData.code,
+            bookName: bookData.name,
+            chapter: record.chapter_number,
+            verse: record.verse_number,
+            versionId: record.version_id
+          });
+        }
       }
 
       // Fetch last text position
