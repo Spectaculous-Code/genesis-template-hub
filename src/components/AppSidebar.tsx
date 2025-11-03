@@ -62,7 +62,14 @@ export function AppSidebar({
       setOpen(false);
     }
   };
-  const [lastAudioPosition, setLastAudioPosition] = useState<string>("Ei viimeisintä");
+  const [lastAudioPosition, setLastAudioPosition] = useState<{
+    text: string,
+    version: string,
+    bookName: string,
+    chapter: number,
+    verse: number,
+    versionId: string
+  } | null>(null);
   const [lastTextPosition, setLastTextPosition] = useState<string>("Ei viimeisintä");
   const [lastReadingData, setLastReadingData] = useState<any>(null);
   const [summariesCount, setSummariesCount] = useState(0);
@@ -85,7 +92,9 @@ export function AppSidebar({
         .select(`
           chapter_number,
           verse_number,
-          books!inner(name)
+          version_id,
+          books!inner(name),
+          bible_versions!inner(code)
         `)
         .eq('user_id', user.id)
         .eq('history_type', 'listen')
@@ -95,7 +104,14 @@ export function AppSidebar({
       if (audioHistory && audioHistory.length > 0) {
         const record = audioHistory[0];
         const bookName = getFinnishBookName(record.books.name);
-        setLastAudioPosition(`${bookName} ${record.chapter_number}:${record.verse_number}`);
+        setLastAudioPosition({
+          text: `${bookName} ${record.chapter_number}:${record.verse_number}`,
+          version: record.bible_versions.code,
+          bookName: record.books.name,
+          chapter: record.chapter_number,
+          verse: record.verse_number,
+          versionId: record.version_id
+        });
       }
 
       // Fetch last text position
@@ -214,9 +230,19 @@ export function AppSidebar({
                     <Play className="h-4 w-4" />
                     {!collapsed && <span>Jatka kuuntelua</span>}
                   </SidebarMenuButton>
-                  {!collapsed && (
+                  {!collapsed && lastAudioPosition && (
+                    <div 
+                      className="ml-8 text-xs cursor-pointer hover:underline"
+                      onClick={() => {
+                        window.location.href = `/?book=${encodeURIComponent(lastAudioPosition.bookName)}&chapter=${lastAudioPosition.chapter}&verse=${lastAudioPosition.verse}&version=${lastAudioPosition.version}&autoplay=true`;
+                      }}
+                    >
+                      {lastAudioPosition.text} <span className="text-muted-foreground">[{lastAudioPosition.version}] (viimeisin)</span>
+                    </div>
+                  )}
+                  {!collapsed && !lastAudioPosition && (
                     <div className="ml-8 text-xs text-muted-foreground">
-                      {lastAudioPosition}
+                      Ei viimeisintä
                     </div>
                   )}
                 </div>
