@@ -330,6 +330,10 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
               };
             });
             setAudioCues(cuesWithVerseNumbers);
+            // Activate verse highlighting from verse 1 if no target verse
+            if (!targetVerse && cuesWithVerseNumbers.length > 0) {
+              setCurrentVerse(1);
+            }
           }
           
           // Wait for audio element to be ready
@@ -337,13 +341,19 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
             audioRef.current.src = audioData.file_url;
             audioRef.current.load();
           }
+        } else {
+          // Audio already loaded, ensure verse highlighting is active
+          if (!targetVerse && currentVerse === 0) {
+            setCurrentVerse(1);
+          }
         }
         
-        // If targetVerse is set, seek to that verse
+        // If targetVerse is set, seek to that verse and activate highlighting
         if (targetVerse && audioCues.length > 0 && audioRef.current) {
           const cue = audioCues.find(c => c.verse_number === targetVerse);
           if (cue) {
             audioRef.current.currentTime = cue.start_ms / 1000;
+            setCurrentVerse(targetVerse);
           }
         }
         
