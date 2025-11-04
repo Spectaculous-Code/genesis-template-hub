@@ -443,23 +443,30 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     };
 
     const handleTimeUpdate = () => {
-      if (audioCues.length === 0) return;
+      if (audioCues.length === 0) {
+        console.log('handleTimeUpdate: No audio cues available');
+        return;
+      }
       
       const currentTimeMs = audio.currentTime * 1000;
       const currentCue = audioCues.find(
         cue => currentTimeMs >= cue.start_ms && currentTimeMs < cue.end_ms
       );
       
-      if (currentCue && currentCue.verse_number !== currentVerse) {
-        setCurrentVerse(currentCue.verse_number);
-        
-        // Auto-scroll to current verse
-        const verseElement = document.getElementById(`verse-${currentCue.verse_number}`);
-        if (verseElement) {
-          verseElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
+      if (currentCue) {
+        console.log('Current cue found:', currentCue.verse_number, 'Current verse state:', currentVerse);
+        if (currentCue.verse_number !== currentVerse) {
+          console.log('Updating current verse to:', currentCue.verse_number);
+          setCurrentVerse(currentCue.verse_number);
+          
+          // Auto-scroll to current verse
+          const verseElement = document.getElementById(`verse-${currentCue.verse_number}`);
+          if (verseElement) {
+            verseElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            });
+          }
         }
       }
     };
