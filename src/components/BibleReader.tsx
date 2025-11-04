@@ -388,6 +388,9 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           setIsNavigating(true);
           setHasUserNavigated(true);
           
+          // Reset verse highlighting to start of chapter
+          setCurrentVerse(1);
+          
           onBookSelect(nextChapterData.book);
           onChapterSelect(nextChapterData.chapter);
           
@@ -396,12 +399,12 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
             description: `${getFinnishBookName(nextChapterData.book)} ${nextChapterData.chapter}`,
           });
           
-          // Wait a moment for the chapter to load, then start playback
+          // Wait for the chapter data and audio to load, then start playback
           setTimeout(() => {
             if (readerKey) {
               togglePlayback();
             }
-          }, 1000);
+          }, 1500);
         } else {
           toast({
             title: "Luku päättyi",
