@@ -137,7 +137,7 @@ const MainContent = ({
                 last_read_at: new Date().toISOString(),
                 history_type: 'read'
               }, {
-                onConflict: 'user_id,book_id,chapter_number,version_id'
+                onConflict: 'user_id,book_id,chapter_number,history_type'
               });
           }
         }
