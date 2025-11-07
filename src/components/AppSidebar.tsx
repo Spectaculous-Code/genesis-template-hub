@@ -126,23 +126,34 @@ export function AppSidebar({
         }
       }
 
-      // Fetch last text position
-      const { data: textHistory } = await supabase
+      // Fetch last text position - use bible_schema explicitly
+      const { data: textHistory } = await (supabase as any)
+        .schema('bible_schema')
         .from('user_reading_history')
         .select(`
           chapter_number,
           verse_number,
-          books!inner(name)
+          book_id
         `)
         .eq('user_id', user.id)
         .eq('history_type', 'read')
         .order('last_read_at', { ascending: false })
-        .limit(1);
+        .limit(1)
+        .single();
 
-      if (textHistory && textHistory.length > 0) {
-        const record = textHistory[0];
-        const bookName = getFinnishBookName(record.books.name);
-        setLastTextPosition(`${bookName} ${record.chapter_number}:${record.verse_number}`);
+      if (textHistory) {
+        // Fetch book name separately from bible_schema
+        const { data: bookData } = await (supabase as any)
+          .schema('bible_schema')
+          .from('books')
+          .select('name')
+          .eq('id', textHistory.book_id)
+          .single();
+        
+        if (bookData) {
+          const bookName = getFinnishBookName(bookData.name);
+          setLastTextPosition(`${bookName} ${textHistory.chapter_number}:${textHistory.verse_number}`);
+        }
       }
 
       // Fetch summaries count (using user_markings table with marking_type 'summary')
@@ -238,18 +249,20 @@ export function AppSidebar({
               {/* Continue Audio */}
               <SidebarMenuItem>
                 <div className="space-y-1">
-                  <SidebarMenuButton onClick={onNavigateToContinueAudio}>
+                  <SidebarMenuButton 
+                    onClick={() => {
+                      if (lastAudioPosition) {
+                        window.location.href = `/?book=${encodeURIComponent(lastAudioPosition.bookName)}&chapter=${lastAudioPosition.chapter}&verse=${lastAudioPosition.verse}&version=${lastAudioPosition.version}&autoplay=true`;
+                      }
+                    }}
+                    disabled={!lastAudioPosition}
+                  >
                     <Play className="h-4 w-4" />
                     {!collapsed && <span>Jatka kuuntelua</span>}
                   </SidebarMenuButton>
                   {!collapsed && lastAudioPosition && (
-                    <div 
-                      className="ml-8 text-xs cursor-pointer hover:underline"
-                      onClick={() => {
-                        window.location.href = `/?book=${encodeURIComponent(lastAudioPosition.bookName)}&chapter=${lastAudioPosition.chapter}&verse=${lastAudioPosition.verse}&version=${lastAudioPosition.version}&autoplay=true`;
-                      }}
-                    >
-                      {lastAudioPosition.text} <span className="text-muted-foreground">[{lastAudioPosition.version}] (viimeisin)</span>
+                    <div className="ml-8 text-xs text-muted-foreground">
+                      {lastAudioPosition.text} <span className="text-muted-foreground">[{lastAudioPosition.version}]</span>
                     </div>
                   )}
                   {!collapsed && !lastAudioPosition && (

@@ -26,6 +26,7 @@ interface BibleReaderProps {
   isFromLatestPosition?: boolean;
   onPlaybackStateChange?: (isPlaying: boolean) => void;
   onLoadingStateChange?: (isLoading: boolean) => void;
+  shouldAutoplay?: boolean;
 }
 
 export interface BibleReaderHandle {
@@ -33,7 +34,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -146,6 +147,22 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
 
     fetchChapterData();
   }, [book, chapter, versionCode, isAppTitleNavigation]);
+
+  // Autoplay effect - start playback automatically when shouldAutoplay is true
+  useEffect(() => {
+    const attemptAutoplay = async () => {
+      // Check if we should autoplay and chapter data is loaded
+      if (shouldAutoplay && chapterData && readerKey && !loading && !isPlaying) {
+        console.log('Autoplay triggered - starting playback automatically');
+        // Small delay to ensure everything is rendered
+        setTimeout(() => {
+          togglePlayback();
+        }, 500);
+      }
+    };
+
+    attemptAutoplay();
+  }, [shouldAutoplay, chapterData, readerKey, loading]);
 
   // Set current verse when targetVerse changes
   useEffect(() => {

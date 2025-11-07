@@ -26,16 +26,10 @@ export const useLatestReadingPosition = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
+        .schema('bible_schema')
         .from('user_reading_history')
-        .select(`
-          chapter_number,
-          verse_number,
-          book:book_id (
-            name,
-            name_localized
-          )
-        `)
+        .select('chapter_number, verse_number, book_id')
         .eq('user_id', user.id)
         .order('last_read_at', { ascending: false })
         .limit(1)
@@ -44,11 +38,21 @@ export const useLatestReadingPosition = () => {
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching latest reading position:', error);
       } else if (data) {
-        setLatestPosition({
-          bookName: data.book?.name || '',
-          chapter: data.chapter_number,
-          verse: data.verse_number,
-        });
+        // Fetch book name separately from bible_schema
+        const { data: bookData } = await (supabase as any)
+          .schema('bible_schema')
+          .from('books')
+          .select('name')
+          .eq('id', data.book_id)
+          .single();
+        
+        if (bookData) {
+          setLatestPosition({
+            bookName: bookData.name,
+            chapter: data.chapter_number,
+            verse: data.verse_number,
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching latest reading position:', error);

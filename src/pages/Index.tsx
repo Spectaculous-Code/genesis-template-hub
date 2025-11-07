@@ -41,6 +41,9 @@ const IndexContent = () => {
   const [extendedSearchResults, setExtendedSearchResults] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
+  // State for autoplay
+  const [shouldAutoplay, setShouldAutoplay] = useState(false);
+
   // Handle URL parameters for navigation from history
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -48,12 +51,19 @@ const IndexContent = () => {
     const chapterParam = urlParams.get('chapter');
     const verseParam = urlParams.get('verse');
     const searchParam = urlParams.get('search');
+    const autoplayParam = urlParams.get('autoplay');
 
     if (bookParam && chapterParam) {
       setSelectedBook(bookParam);
       setSelectedChapter(parseInt(chapterParam));
       if (verseParam) {
         setTargetVerse(parseInt(verseParam));
+      }
+      // Set autoplay flag if parameter is present
+      if (autoplayParam === 'true') {
+        setShouldAutoplay(true);
+        // Clear the autoplay flag after a short delay to avoid repeated autoplay
+        setTimeout(() => setShouldAutoplay(false), 1000);
       }
       setCurrentView('bible');
     } else if (searchParam) {
@@ -305,6 +315,7 @@ const IndexContent = () => {
               setIsAppTitleNavigation(false);
             }}
             onVersionChange={setVersionCode}
+            shouldAutoplay={shouldAutoplay}
           />
         </div>
 

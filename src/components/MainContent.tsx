@@ -36,6 +36,7 @@ interface MainContentProps {
   isAppTitleNavigation?: boolean;
   onNavigationComplete?: () => void;
   onVersionChange?: (versionCode: string) => void;
+  shouldAutoplay?: boolean;
 }
 
 const MainContent = ({
@@ -50,7 +51,8 @@ const MainContent = ({
   searchQuery = "",
   isAppTitleNavigation = false,
   onNavigationComplete,
-  onVersionChange
+  onVersionChange,
+  shouldAutoplay = false
 }: MainContentProps) => {
   console.log('MainContent render - isAppTitleNavigation:', isAppTitleNavigation);
   const [bibleBooks, setBibleBooks] = useState<BibleBook[]>([]);
@@ -384,6 +386,7 @@ const MainContent = ({
             onPlaybackStateChange={setIsPlaying}
             onLoadingStateChange={setIsLoadingAudio}
             ref={bibleReaderRef}
+            shouldAutoplay={shouldAutoplay}
           />
         );
     }
