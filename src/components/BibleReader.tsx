@@ -299,7 +299,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
               const { data: upsertResult, error: upsertError } = await supabase
                 .from('user_reading_history')
                 .upsert([historyData], {
-                  onConflict: 'user_id,book_id,chapter_number,history_type'
+                  onConflict: 'user_id,version_id,history_type'
                 })
                 .select();
               
