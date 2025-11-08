@@ -197,11 +197,6 @@ export function AppSidebar({
     
     // Load last reading position from localStorage
     loadLastReadingPosition();
-
-    // Set up an interval to check for reading position updates
-    const positionCheckInterval = setInterval(loadLastReadingPosition, 2000);
-    
-    return () => clearInterval(positionCheckInterval);
   }, [user]);
 
   const loadLastReadingPosition = () => {
