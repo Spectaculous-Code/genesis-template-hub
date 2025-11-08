@@ -149,11 +149,15 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   }, [book, chapter, versionCode, isAppTitleNavigation]);
 
   // Autoplay effect - start playback automatically when shouldAutoplay is true
+  // Use a ref to track if autoplay has already been triggered to prevent multiple calls
+  const autoplayTriggeredRef = useRef(false);
+  
   useEffect(() => {
     const attemptAutoplay = async () => {
       // Check if we should autoplay and chapter data is loaded
-      if (shouldAutoplay && chapterData && readerKey && !loading && !isPlaying) {
+      if (shouldAutoplay && chapterData && readerKey && !loading && !isPlaying && !autoplayTriggeredRef.current) {
         console.log('Autoplay triggered - starting playback automatically');
+        autoplayTriggeredRef.current = true;
         // Small delay to ensure everything is rendered
         setTimeout(() => {
           togglePlayback();
@@ -163,6 +167,11 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
 
     attemptAutoplay();
   }, [shouldAutoplay, chapterData, readerKey, loading]);
+  
+  // Reset autoplay trigger when book/chapter changes
+  useEffect(() => {
+    autoplayTriggeredRef.current = false;
+  }, [book, chapter]);
 
   // Set current verse when targetVerse changes
   useEffect(() => {

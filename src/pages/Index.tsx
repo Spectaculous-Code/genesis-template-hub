@@ -44,7 +44,7 @@ const IndexContent = () => {
   // State for autoplay
   const [shouldAutoplay, setShouldAutoplay] = useState(false);
 
-  // Handle URL parameters for navigation from history
+  // Handle URL parameters for navigation from history - CRITICAL: Must run FIRST
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const bookParam = urlParams.get('book');
@@ -54,6 +54,7 @@ const IndexContent = () => {
     const autoplayParam = urlParams.get('autoplay');
 
     if (bookParam && chapterParam) {
+      console.log('URL params detected - setting book/chapter from URL:', bookParam, chapterParam);
       setSelectedBook(bookParam);
       setSelectedChapter(parseInt(chapterParam));
       if (verseParam) {
@@ -61,9 +62,13 @@ const IndexContent = () => {
       }
       // Set autoplay flag if parameter is present
       if (autoplayParam === 'true') {
+        console.log('Autoplay flag detected in URL');
         setShouldAutoplay(true);
-        // Clear the autoplay flag after a short delay to avoid repeated autoplay
-        setTimeout(() => setShouldAutoplay(false), 1000);
+        // Clear the autoplay flag after it's been used
+        setTimeout(() => {
+          console.log('Clearing autoplay flag');
+          setShouldAutoplay(false);
+        }, 2000);
       }
       setCurrentView('bible');
     } else if (searchParam) {
@@ -73,14 +78,27 @@ const IndexContent = () => {
   }, [location.search]);
 
   // Set default book if none selected and no latest position
+  // BUT: Skip if URL has book/chapter params to avoid overriding URL navigation
   useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const hasUrlBook = urlParams.has('book');
+    const hasUrlChapter = urlParams.has('chapter');
+
+    // Don't initialize if URL params exist - let URL params handler set the book/chapter
+    if (hasUrlBook || hasUrlChapter) {
+      console.log('Skipping default initialization - URL params present');
+      return;
+    }
+
     if (!selectedBook && latestPosition === null) {
       // Set Genesis 1 as default when app loads with no saved position
+      console.log('Setting default: Genesis 1');
       setSelectedBook('Genesis');
       setSelectedChapter(1);
       setCurrentView('bible');
     } else if (!selectedBook && latestPosition) {
       // Set latest position if available
+      console.log('Setting from latest position:', latestPosition);
       setSelectedBook(latestPosition.bookName);
       setSelectedChapter(latestPosition.chapter);
       if (latestPosition.verse) {
@@ -88,7 +106,7 @@ const IndexContent = () => {
       }
       setCurrentView('bible');
     }
-  }, [selectedBook, latestPosition]);
+  }, [selectedBook, latestPosition, location.search]);
 
   const handleBookSelect = (book: string) => {
     setSelectedBook(book);
