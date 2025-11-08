@@ -219,9 +219,18 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         console.log('Current verse:', currentVerse);
         console.log('Book:', book, 'Chapter:', chapter);
         
-        const currentVerseData = chapterData.verses.find(v => v.verse_number === currentVerse);
-        if (currentVerseData) {
-          console.log('Current verse data found:', currentVerseData.id);
+        // Determine the most accurate verse at pause time using current audio time
+        let verseNumberToSave = currentVerse;
+        if (audioRef.current && audioCues.length > 0) {
+          const nowMs = audioRef.current.currentTime * 1000;
+          const cueNow = audioCues.find(c => nowMs >= c.start_ms && nowMs < c.end_ms);
+          if (cueNow) {
+            verseNumberToSave = cueNow.verse_number;
+          }
+        }
+        const verseData = chapterData.verses.find(v => v.verse_number === verseNumberToSave);
+        if (verseData) {
+          console.log('Current verse data found:', verseData.id);
           // Fetch book_id and version_id
           (async () => {
             try {
@@ -287,39 +296,71 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
                 book_id: bookData.id,
                 chapter_id: chapterDbData?.id,
                 chapter_number: chapter,
-                verse_number: currentVerse,
-                verse_id: currentVerseData.id,
+                verse_number: verseNumberToSave,
+                verse_id: verseData.id,
                 version_id: versionData.id,
                 history_type: 'listen' as const,
                 last_read_at: new Date().toISOString()
               };
               
-              console.log('Upserting history data:', historyData);
+              console.log('Saving listening position (update-or-insert):', historyData);
 
-              const { data: upsertResult, error: upsertError } = await supabase
+              // Update latest record if exists, else insert new
+              const { data: existing, error: existingError } = await supabase
                 .from('user_reading_history')
-                .upsert([historyData], {
-                  onConflict: 'user_id,version_id,history_type'
-                })
-                .select();
-              
-              if (upsertError) {
-                console.error('Error upserting listening position:', upsertError);
+                .select('id')
+                .eq('user_id', user.id)
+                .eq('version_id', versionData.id)
+                .eq('history_type', 'listen')
+                .order('last_read_at', { ascending: false })
+                .limit(1);
+
+              if (existingError) {
+                console.error('Error checking existing listening position:', existingError);
+              }
+
+              let saveError = null as any;
+              if (existing && existing.length > 0) {
+                const { error: updateError } = await supabase
+                  .from('user_reading_history')
+                  .update({
+                    book_id: bookData.id,
+                    chapter_id: chapterDbData?.id,
+                    chapter_number: chapter,
+                    verse_number: verseNumberToSave,
+                    verse_id: verseData.id,
+                    last_read_at: new Date().toISOString(),
+                  })
+                  .eq('id', existing[0].id);
+                saveError = updateError;
               } else {
-                console.log('Listening position saved successfully:', upsertResult);
+                const { error: insertError } = await supabase
+                  .from('user_reading_history')
+                  .insert([historyData]);
+                saveError = insertError;
+              }
+
+              if (saveError) {
+                console.error('Error saving listening position:', saveError);
+              } else {
+                console.log('Listening position saved successfully');
               }
             } catch (error) {
               console.error('Error saving listening position:', error);
             }
           })();
         } else {
-          console.log('Current verse data NOT found for verse:', currentVerse);
+          console.log('Current verse data NOT found for verse:', verseNumberToSave);
         }
       }
       
+      // Show exact verse at pause time
+      const nowMs = audioRef.current ? audioRef.current.currentTime * 1000 : 0;
+      const cueNow = audioCues.find(c => nowMs >= c.start_ms && nowMs < c.end_ms);
+      const verseForToast = cueNow?.verse_number ?? currentVerse;
       toast({
         title: "Toisto pysäytetty",
-        description: `${getFinnishBookName(book)} ${chapter}:${currentVerse}`,
+        description: `${getFinnishBookName(book)} ${chapter}:${verseForToast}`,
       });
     } else {
       // Start audio

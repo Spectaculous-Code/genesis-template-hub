@@ -126,21 +126,47 @@ const MainContent = ({
             .single();
 
           if (chapterData) {
-            // Save to user_reading_history
-            await supabase
+            // Save to user_reading_history (update latest or insert)
+            const history = {
+              user_id: user.id,
+              book_id: bookData.id,
+              chapter_id: chapterData.id,
+              version_id: versionData.id,
+              chapter_number: chapterNum,
+              verse_number: 1, // Default to verse 1
+              last_read_at: new Date().toISOString(),
+              history_type: 'read' as const
+            };
+
+            const { data: existing, error: existingError } = await supabase
               .from('user_reading_history')
-              .upsert({
-                user_id: user.id,
-                book_id: bookData.id,
-                chapter_id: chapterData.id,
-                version_id: versionData.id,
-                chapter_number: chapterNum,
-                verse_number: 1, // Default to verse 1
-                last_read_at: new Date().toISOString(),
-                history_type: 'read'
-              }, {
-                onConflict: 'user_id,book_id,chapter_number,history_type'
-              });
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('history_type', 'read')
+              .order('last_read_at', { ascending: false })
+              .limit(1);
+
+            if (existingError) {
+              console.error('Error checking existing reading position:', existingError);
+            }
+
+            if (existing && existing.length > 0) {
+              await supabase
+                .from('user_reading_history')
+                .update({
+                  book_id: history.book_id,
+                  chapter_id: history.chapter_id,
+                  version_id: history.version_id,
+                  chapter_number: history.chapter_number,
+                  verse_number: history.verse_number,
+                  last_read_at: history.last_read_at
+                })
+                .eq('id', existing[0].id);
+            } else {
+              await supabase
+                .from('user_reading_history')
+                .insert([history]);
+            }
           }
         }
       }
