@@ -105,7 +105,7 @@ export const generateChapterAudio = async (
       throw new Error('No audio URL returned from server');
     }
 
-    console.log('Audio generated successfully:', data);
+    console.log('Audio loaded successfully:', data);
 
     // Fetch audio cues for this audio
     const { data: cuesData, error: cuesError } = await supabase
