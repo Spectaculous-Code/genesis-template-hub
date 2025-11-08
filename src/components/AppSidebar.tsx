@@ -139,7 +139,7 @@ export function AppSidebar({
         .eq('history_type', 'read')
         .order('last_read_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (textHistory) {
         // Fetch book name separately from bible_schema
