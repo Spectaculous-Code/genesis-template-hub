@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface AudioCue {
   verse_id: string;
+  verse_number: number;
   start_ms: number;
   end_ms: number;
 }
@@ -106,10 +107,15 @@ export const generateChapterAudio = async (
 
     console.log('Audio generated successfully:', data);
 
-    // Fetch audio cues for this audio
+    // Fetch audio cues for this audio with verse numbers
     const { data: cuesData, error: cuesError } = await supabase
       .from('audio_cues')
-      .select('verse_id, start_ms, end_ms')
+      .select(`
+        verse_id,
+        start_ms,
+        end_ms,
+        verses:verse_id (verse_number)
+      `)
       .eq('audio_id', data.audio_id)
       .order('start_ms', { ascending: true });
 
@@ -117,11 +123,19 @@ export const generateChapterAudio = async (
       console.error('Error fetching audio cues:', cuesError);
     }
 
+    // Map cues to include verse_number from the joined verses table
+    const mappedCues = (cuesData || []).map((cue: any) => ({
+      verse_id: cue.verse_id,
+      verse_number: cue.verses?.verse_number || 0,
+      start_ms: cue.start_ms,
+      end_ms: cue.end_ms
+    }));
+
     return {
       audio_id: data.audio_id,
       file_url: data.file_url,
       duration_ms: data.duration_ms,
-      audio_cues: cuesData || []
+      audio_cues: mappedCues
     };
   } catch (error) {
     console.error('Error in generateChapterAudio:', error);

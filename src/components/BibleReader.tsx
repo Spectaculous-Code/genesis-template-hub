@@ -337,18 +337,11 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
           setAudioUrl(audioData.file_url);
           
-          // Map audio cues to include verse numbers
-          if (audioData.audio_cues && chapterData) {
-            const cuesWithVerseNumbers = audioData.audio_cues.map(cue => {
-              const verse = chapterData.verses.find(v => v.id === cue.verse_id);
-              return {
-                ...cue,
-                verse_number: verse?.verse_number || 0
-              };
-            });
-            setAudioCues(cuesWithVerseNumbers);
+          // Audio cues now include verse_number from the API
+          if (audioData.audio_cues) {
+            setAudioCues(audioData.audio_cues);
             // Activate verse highlighting from verse 1 if no target verse
-            if (!targetVerse && cuesWithVerseNumbers.length > 0) {
+            if (!targetVerse && audioData.audio_cues.length > 0) {
               setCurrentVerse(1);
             }
           }
@@ -758,16 +751,9 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
         setAudioUrl(audioData.file_url);
         
-        // Map audio cues to include verse numbers
-        if (audioData.audio_cues && chapterData) {
-          const cuesWithVerseNumbers = audioData.audio_cues.map(cue => {
-            const verse = chapterData.verses.find(v => v.id === cue.verse_id);
-            return {
-              ...cue,
-              verse_number: verse?.verse_number || 0
-            };
-          });
-          setAudioCues(cuesWithVerseNumbers);
+        // Audio cues now include verse_number from the API
+        if (audioData.audio_cues) {
+          setAudioCues(audioData.audio_cues);
           
           // Now seek and play
           if (audioRef.current) {
@@ -776,7 +762,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
             
             // Wait for metadata to load
             audioRef.current.onloadedmetadata = () => {
-              const cue = cuesWithVerseNumbers.find(c => c.verse_number === verseNumber);
+              const cue = audioData.audio_cues.find(c => c.verse_number === verseNumber);
               if (cue && audioRef.current) {
                 audioRef.current.currentTime = cue.start_ms / 1000;
                 audioRef.current.play().then(() => {
