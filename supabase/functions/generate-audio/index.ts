@@ -115,6 +115,7 @@ serve(async (req) => {
           audio_id: existing.id,
           file_url: existing.file_url,
           duration_ms: existing.duration_ms,
+          from_cache: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -263,6 +264,7 @@ serve(async (req) => {
         audio_id: audioAsset.id,
         file_url: audioAsset.file_url,
         duration_ms: audioAsset.duration_ms,
+        from_cache: false,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

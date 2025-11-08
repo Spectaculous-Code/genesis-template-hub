@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, MessageSquare } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, MessageSquare, Database, Sparkles } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getChapterData, ChapterWithVerses, getNextChapter, getPreviousChapter, getBookChapters } from "@/lib/bibleService";
 import { getFinnishBookName } from "@/lib/bookNameMapping";
 import VerseHighlighter from "./VerseHighlighter";
@@ -51,6 +52,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioCues, setAudioCues] = useState<Array<{verse_id: string; verse_number: number; start_ms: number; end_ms: number}>>([]);
+  const [audioFromCache, setAudioFromCache] = useState<boolean | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
@@ -387,6 +389,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           
           const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
           setAudioUrl(audioData.file_url);
+          setAudioFromCache(audioData.from_cache ?? null);
           
           // Audio cues now include verse_number from the API
           if (audioData.audio_cues) {
@@ -954,7 +957,27 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         </Button>
         
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">{getFinnishBookName(book)}</h1>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-3xl font-bold text-foreground">{getFinnishBookName(book)}</h1>
+            {audioFromCache !== null && readerKey && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 cursor-help">
+                      {audioFromCache ? (
+                        <Database className="h-3.5 w-3.5 text-muted-foreground" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{audioFromCache ? 'Audio ladattu välimuistista' : 'Audio generoitu uutena'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
           <h2 className="text-xl text-muted-foreground">Luku {chapter}</h2>
         </div>
         

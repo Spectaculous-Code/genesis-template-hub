@@ -12,6 +12,7 @@ export interface AudioGenerationResult {
   file_url: string;
   duration_ms: number;
   audio_cues?: AudioCue[];
+  from_cache?: boolean;
 }
 
 /**
@@ -151,7 +152,8 @@ export const generateChapterAudio = async (
       audio_id: data.audio_id,
       file_url: data.file_url,
       duration_ms: data.duration_ms,
-      audio_cues: mappedCues
+      audio_cues: mappedCues,
+      from_cache: data.from_cache
     };
   } catch (error) {
     console.error('Error in generateChapterAudio:', error);
