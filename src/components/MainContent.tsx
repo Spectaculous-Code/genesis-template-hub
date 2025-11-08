@@ -294,9 +294,15 @@ const MainContent = ({
           const books = await getBibleBooks(version.code);
           setBibleBooks(books);
 
+          // Check if URL params are present - if so, skip auto-initialization
+          const urlParams = new URLSearchParams(window.location.search);
+          const hasUrlBook = urlParams.has('book');
+          const hasUrlChapter = urlParams.has('chapter');
+
           // Only initialize book selection if we don't have a selected book
           // AND we're not in app title navigation
-          if (books.length > 0 && !selectedBook && !isAppTitleNavigation && !positionLoading) {
+          // AND URL params are not present (to avoid overriding URL navigation)
+          if (books.length > 0 && !selectedBook && !isAppTitleNavigation && !positionLoading && !hasUrlBook && !hasUrlChapter) {
             // Try to use latest reading position first
             if (latestPosition?.bookName) {
               // Find book by Finnish or English name
