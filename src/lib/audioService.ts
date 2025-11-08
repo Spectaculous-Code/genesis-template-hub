@@ -107,15 +107,10 @@ export const generateChapterAudio = async (
 
     console.log('Audio generated successfully:', data);
 
-    // Fetch audio cues for this audio with verse numbers
+    // Fetch audio cues for this audio
     const { data: cuesData, error: cuesError } = await supabase
       .from('audio_cues')
-      .select(`
-        verse_id,
-        start_ms,
-        end_ms,
-        verses:verse_id (verse_number)
-      `)
+      .select('verse_id, start_ms, end_ms')
       .eq('audio_id', data.audio_id)
       .order('start_ms', { ascending: true });
 
@@ -123,10 +118,31 @@ export const generateChapterAudio = async (
       console.error('Error fetching audio cues:', cuesError);
     }
 
-    // Map cues to include verse_number from the joined verses table
+    // Fetch verse numbers for all cues in a single query
+    const verseIds = (cuesData || []).map((cue: any) => cue.verse_id);
+    let verseNumbersMap: Record<string, number> = {};
+    
+    if (verseIds.length > 0) {
+      const { data: versesData, error: versesError } = await (supabase as any)
+        .schema('bible_schema')
+        .from('verses')
+        .select('id, verse_number')
+        .in('id', verseIds);
+      
+      if (versesError) {
+        console.error('Error fetching verse numbers:', versesError);
+      } else if (versesData) {
+        verseNumbersMap = versesData.reduce((acc: Record<string, number>, verse: any) => {
+          acc[verse.id] = verse.verse_number;
+          return acc;
+        }, {});
+      }
+    }
+
+    // Map cues to include verse_number
     const mappedCues = (cuesData || []).map((cue: any) => ({
       verse_id: cue.verse_id,
-      verse_number: cue.verses?.verse_number || 0,
+      verse_number: verseNumbersMap[cue.verse_id] || 0,
       start_ms: cue.start_ms,
       end_ms: cue.end_ms
     }));
