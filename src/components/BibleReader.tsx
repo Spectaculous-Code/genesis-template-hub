@@ -378,6 +378,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         onLoadingStateChange?.(true);
         
         // Generate or fetch audio if not already loaded
+        let currentAudioCues = audioCues;
         if (!audioUrl) {
           toast({
             title: "Ladataan ääntä...",
@@ -389,6 +390,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           
           // Audio cues now include verse_number from the API
           if (audioData.audio_cues) {
+            currentAudioCues = audioData.audio_cues;
             setAudioCues(audioData.audio_cues);
             // Activate verse highlighting from verse 1 if no target verse
             if (!targetVerse && audioData.audio_cues.length > 0) {
@@ -409,9 +411,11 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         }
         
         // If targetVerse is set, seek to that verse and activate highlighting
-        if (targetVerse && audioCues.length > 0 && audioRef.current) {
-          const cue = audioCues.find(c => c.verse_number === targetVerse);
+        // Use currentAudioCues which contains the just-loaded data
+        if (targetVerse && currentAudioCues.length > 0 && audioRef.current) {
+          const cue = currentAudioCues.find(c => c.verse_number === targetVerse);
           if (cue) {
+            console.log('Seeking to target verse:', targetVerse, 'at time:', cue.start_ms / 1000);
             audioRef.current.currentTime = cue.start_ms / 1000;
             setCurrentVerse(targetVerse);
           }
