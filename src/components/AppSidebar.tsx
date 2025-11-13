@@ -37,12 +37,21 @@ interface AppSidebarProps {
     verse: number;
     text: string;
   } | null;
+  lastAudioPosition?: {
+    text: string,
+    version: string,
+    bookName: string,
+    chapter: number,
+    verse: number,
+    versionId: string
+  } | null;
 }
 
 export function AppSidebar({
   onNavigateToContinueAudio,
   onNavigateToContinueText,
-  selectedVerse
+  selectedVerse,
+  lastAudioPosition: propLastAudioPosition
 }: AppSidebarProps) {
   const { state, open, isMobile, toggleSidebar, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
@@ -81,6 +90,13 @@ export function AppSidebar({
     chapter: number,
     verse: number
   } | null>(null);
+
+  // Update local state when prop changes (immediate update from parent)
+  useEffect(() => {
+    if (propLastAudioPosition) {
+      setLastAudioPosition(propLastAudioPosition);
+    }
+  }, [propLastAudioPosition]);
 
   useEffect(() => {
     const fetchUserData = async () => {
