@@ -44,6 +44,16 @@ const IndexContent = () => {
   // State for autoplay
   const [shouldAutoplay, setShouldAutoplay] = useState(false);
 
+  // State for last audio position to update sidebar immediately
+  const [lastAudioPosition, setLastAudioPosition] = useState<{
+    text: string,
+    version: string,
+    bookName: string,
+    chapter: number,
+    verse: number,
+    versionId: string
+  } | null>(null);
+
   // Handle URL parameters for navigation from history - CRITICAL: Must run FIRST
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -185,6 +195,34 @@ const IndexContent = () => {
     setSelectedVerse({ bookName, chapter, verse, text });
   };
 
+  const handleListeningPositionSaved = async (bookName: string, chapter: number, verse: number, versionCode: string) => {
+    console.log('Listening position saved callback:', { bookName, chapter, verse, versionCode });
+    
+    // Fetch version info to get version_id
+    const { data: versionData } = await (supabase as any)
+      .schema('bible_schema')
+      .from('bible_versions')
+      .select('id, code')
+      .eq('code', versionCode)
+      .single();
+    
+    if (versionData) {
+      const { getFinnishBookName } = await import('@/lib/bookNameMapping');
+      const finnishBookName = getFinnishBookName(bookName);
+      
+      setLastAudioPosition({
+        text: `${finnishBookName} ${chapter}:${verse}`,
+        version: versionCode,
+        bookName: bookName,
+        chapter: chapter,
+        verse: verse,
+        versionId: versionData.id
+      });
+      
+      console.log('Updated lastAudioPosition state:', { bookName, chapter, verse });
+    }
+  };
+
   const handleTopSearch = async (query: string) => {
     if (!query.trim()) return;
     
@@ -285,6 +323,7 @@ const IndexContent = () => {
         onNavigateToContinueAudio={handleNavigateToContinueAudio}
         onNavigateToContinueText={handleNavigateToContinueText}
         selectedVerse={selectedVerse}
+        lastAudioPosition={lastAudioPosition}
       />
 
       <div className="flex-1 flex flex-col min-w-0 mr-12">
@@ -334,6 +373,7 @@ const IndexContent = () => {
             }}
             onVersionChange={setVersionCode}
             shouldAutoplay={shouldAutoplay}
+            onListeningPositionSaved={handleListeningPositionSaved}
           />
         </div>
 

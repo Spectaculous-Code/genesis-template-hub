@@ -28,6 +28,7 @@ interface BibleReaderProps {
   onPlaybackStateChange?: (isPlaying: boolean) => void;
   onLoadingStateChange?: (isLoading: boolean) => void;
   shouldAutoplay?: boolean;
+  onListeningPositionSaved?: (bookName: string, chapter: number, verse: number, versionCode: string) => void;
 }
 
 export interface BibleReaderHandle {
@@ -35,7 +36,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false, onListeningPositionSaved }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -355,6 +356,8 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
                 console.error('Error saving listening position:', saveError);
               } else {
                 console.log('Listening position saved successfully');
+                // Notify parent that position was saved
+                onListeningPositionSaved?.(book, chapter, verseNumberToSave, versionCode);
               }
             } catch (error) {
               console.error('Error saving listening position:', error);
