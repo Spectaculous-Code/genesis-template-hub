@@ -476,12 +476,52 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
             description: `${getFinnishBookName(nextChapterData.book)} ${nextChapterData.chapter}`,
           });
           
-          // Wait for the chapter data and audio to load, then start playback
-          setTimeout(() => {
-            if (readerKey) {
-              togglePlayback();
-            }
-          }, 1500);
+          // Load audio for next chapter and start playback automatically
+          // We need to use nextChapterData values directly since state hasn't updated yet
+          if (readerKey) {
+            setTimeout(async () => {
+              try {
+                setIsLoadingAudio(true);
+                onLoadingStateChange?.(true);
+                
+                const audioData = await generateChapterAudio(
+                  nextChapterData.book, 
+                  nextChapterData.chapter, 
+                  versionCode, 
+                  readerKey
+                );
+                
+                setAudioUrl(audioData.file_url);
+                setAudioFromCache(audioData.from_cache ?? null);
+                
+                if (audioData.audio_cues) {
+                  setAudioCues(audioData.audio_cues);
+                  setCurrentVerse(1);
+                }
+                
+                // Set audio source and play
+                if (audioRef.current) {
+                  audioRef.current.src = audioData.file_url;
+                  audioRef.current.load();
+                  await audioRef.current.play();
+                  setIsPlaying(true);
+                  onPlaybackStateChange?.(true);
+                }
+                
+                setIsLoadingAudio(false);
+                onLoadingStateChange?.(false);
+              } catch (error) {
+                console.error('Error loading next chapter audio:', error);
+                setIsLoadingAudio(false);
+                onLoadingStateChange?.(false);
+                toast({
+                  title: "Virhe",
+                  description: "Seuraavan luvun audion lataaminen epäonnistui",
+                  variant: "destructive"
+                });
+              }
+            }, 1500);
+          }
         } else {
           toast({
             title: "Luku päättyi",
