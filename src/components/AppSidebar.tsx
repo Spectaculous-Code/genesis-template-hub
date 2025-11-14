@@ -172,12 +172,11 @@ export function AppSidebar({
         }
       }
 
-      // Fetch summaries count (using user_markings table with marking_type 'summary')
+      // Fetch summaries count
       const { count: summariesCountResult } = await supabase
-        .from('user_markings')
+        .from('summaries')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('marking_type', 'comment');
+        .eq('user_id', user.id);
 
       setSummariesCount(summariesCountResult || 0);
 
