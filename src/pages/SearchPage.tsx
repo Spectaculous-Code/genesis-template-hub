@@ -224,6 +224,11 @@ const SearchPage = () => {
               isLoading={isLoading || isLoadingExtended}
               onExtendedSearch={() => handleExtendedSearch()}
               canExtendSearch={results?.type === 'text' && sortedVerses.length > 0}
+              onSearchClick={(query, version) => {
+                setQuery(query);
+                setVersionCode(version);
+                handleSearch(query, version);
+              }}
             />
           </div>
         </div>
