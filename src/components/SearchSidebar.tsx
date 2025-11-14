@@ -9,9 +9,12 @@ import {
 } from "@/components/ui/sidebar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { SearchIcon, Sparkles, Clock, BookText } from "lucide-react";
+import { SearchIcon, Sparkles, Clock, BookText, Plus } from "lucide-react";
 import { getFinnishBookName } from "@/lib/bookNameMapping";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface SearchResult {
   verse_id: string;
@@ -49,6 +52,108 @@ export function SearchSidebar({
   const scrollPositionRef = useRef<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { recentSearches, loading: loadingRecent } = useRecentSearches();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const addToSummary = async (verse: SearchResult) => {
+    if (!user) {
+      toast({
+        title: "Kirjaudu sisään",
+        description: "Sinun täytyy kirjautua sisään lisätäksesi jakeita koosteeseen",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Get or create the latest summary
+      let { data: latestSummary } = await supabase
+        .from('summaries')
+        .select('id, title')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Create a new summary if none exists
+      if (!latestSummary) {
+        const { data: newSummary, error: summaryError } = await supabase
+          .from('summaries')
+          .insert({
+            user_id: user.id,
+            title: `Uusi kooste ${new Date().toLocaleDateString('fi-FI')}`
+          })
+          .select('id, title')
+          .single();
+
+        if (summaryError) throw summaryError;
+        latestSummary = newSummary;
+      }
+
+      // Get or create the first group in the summary
+      let { data: firstGroup } = await supabase
+        .from('summary_groups')
+        .select('id')
+        .eq('summary_id', latestSummary.id)
+        .order('group_order', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      // Create first group if none exists
+      if (!firstGroup) {
+        const { data: newGroup, error: groupError } = await supabase
+          .from('summary_groups')
+          .insert({
+            summary_id: latestSummary.id,
+            subtitle: 'Raamatunviittaukset',
+            group_order: 0
+          })
+          .select('id')
+          .single();
+
+        if (groupError) throw groupError;
+        firstGroup = newGroup;
+      }
+
+      // Get the next reference order for this group
+      const { data: existingRefs } = await supabase
+        .from('summary_bible_references')
+        .select('reference_order')
+        .eq('group_id', firstGroup.id)
+        .order('reference_order', { ascending: false })
+        .limit(1);
+
+      const nextOrder = existingRefs && existingRefs.length > 0 ? existingRefs[0].reference_order + 1 : 0;
+
+      // Format the verse reference (e.g., "Ilm.1:7")
+      const finnishBookName = getFinnishBookName(verse.book_name);
+      const referenceText = `${finnishBookName}.${verse.chapter_number}:${verse.verse_number}`;
+
+      // Add the bible reference
+      const { error: refError } = await supabase
+        .from('summary_bible_references')
+        .insert({
+          group_id: firstGroup.id,
+          reference_text: referenceText,
+          reference_order: nextOrder
+        });
+
+      if (refError) throw refError;
+
+      toast({
+        title: "Lisätty koosteeseen",
+        description: `Jae ${referenceText} lisätty koosteeseen "${latestSummary.title}"`
+      });
+
+    } catch (error) {
+      console.error("Error adding to summary:", error);
+      toast({
+        title: "Virhe",
+        description: "Jakeen lisääminen koosteeseen epäonnistui",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Save scroll position when scrolling
   useEffect(() => {
@@ -186,7 +291,7 @@ export function SearchSidebar({
                     {results.map((verse) => (
                       <Card 
                         key={verse.verse_id}
-                        className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                        className="p-3 cursor-pointer hover:bg-accent transition-colors group"
                         onClick={() => onVerseClick(verse)}
                       >
                         <div className="flex items-start gap-2">
@@ -201,6 +306,18 @@ export function SearchSidebar({
                               {verse.text_content}
                             </div>
                           </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToSummary(verse);
+                            }}
+                            title="Lisää koosteeseen"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </div>
                       </Card>
                     ))}
@@ -216,7 +333,7 @@ export function SearchSidebar({
                         {extendedResults.map((verse) => (
                           <Card 
                             key={verse.verse_id}
-                            className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                            className="p-3 cursor-pointer hover:bg-accent transition-colors group"
                             onClick={() => onVerseClick(verse)}
                           >
                             <div className="flex items-start gap-2">
@@ -231,6 +348,18 @@ export function SearchSidebar({
                                   {verse.text_content}
                                 </div>
                               </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  addToSummary(verse);
+                                }}
+                                title="Lisää koosteeseen"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
                             </div>
                           </Card>
                         ))}
