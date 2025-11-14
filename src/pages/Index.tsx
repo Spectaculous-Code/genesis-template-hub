@@ -388,6 +388,11 @@ const IndexContent = () => {
               isLoading={isSearching}
               onExtendedSearch={handleExtendedSearch}
               canExtendSearch={searchResults?.type === 'text' && sortedSearchVerses.length > 0}
+              onSearchClick={(query, version) => {
+                setTopSearchQuery(query);
+                setVersionCode(version);
+                handleTopSearch(query);
+              }}
             />
           </div>
         </SidebarProvider>

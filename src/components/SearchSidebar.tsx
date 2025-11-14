@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/sidebar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { SearchIcon, Sparkles } from "lucide-react";
+import { SearchIcon, Sparkles, Clock, BookText } from "lucide-react";
 import { getFinnishBookName } from "@/lib/bookNameMapping";
+import { useRecentSearches } from "@/hooks/useRecentSearches";
 
 interface SearchResult {
   verse_id: string;
@@ -29,6 +30,7 @@ interface SearchSidebarProps {
   isLoading: boolean;
   onExtendedSearch: () => void;
   canExtendSearch: boolean;
+  onSearchClick?: (query: string, versionCode: string) => void;
 }
 
 export function SearchSidebar({ 
@@ -38,13 +40,15 @@ export function SearchSidebar({
   onVerseClick,
   isLoading,
   onExtendedSearch,
-  canExtendSearch
+  canExtendSearch,
+  onSearchClick
 }: SearchSidebarProps) {
   const { state, isMobile, setOpen } = useSidebar();
   const collapsed = state === "collapsed";
   const extendedResultsRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { recentSearches, loading: loadingRecent } = useRecentSearches();
 
   // Save scroll position when scrolling
   useEffect(() => {
@@ -87,6 +91,9 @@ export function SearchSidebar({
     ...extendedResults.map(r => ({ ...r, isExtended: true }))
   ];
 
+  const hasResults = allResults.length > 0;
+  const showRecentSearches = !hasResults && !isLoading;
+
   // Hover handlers for auto-expand
   const handleMouseEnter = () => {
     if (!isMobile && collapsed) {
@@ -115,7 +122,7 @@ export function SearchSidebar({
             <SearchIcon className="h-4 w-4 text-primary" />
           ) : (
             <span className="text-primary font-bold text-sm tracking-wide">
-              HAKU - {allResults.length} kpl
+              {hasResults ? `HAKU - ${allResults.length} kpl` : 'VIIMEISIMMÄT HAUT'}
             </span>
           )}
         </div>
@@ -126,7 +133,51 @@ export function SearchSidebar({
         <SidebarGroup>
           <SidebarGroupContent>
             <div className="px-3 space-y-3">
-                {isLoading ? (
+                {showRecentSearches ? (
+                  <div className="space-y-3">
+                    {loadingRecent ? (
+                      <div className="text-center py-8">
+                        <p className="text-sm text-muted-foreground">Ladataan...</p>
+                      </div>
+                    ) : recentSearches.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-30" />
+                        <p className="text-sm text-muted-foreground">Ei hakuhistoriaa</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Tekemäsi haut tallentuvat tänne
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {recentSearches.map((search) => (
+                          <Card
+                            key={search.id}
+                            className="p-3 hover:bg-accent transition-colors cursor-pointer group"
+                            onClick={() => onSearchClick?.(search.search_query, search.version_code)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5">
+                                {search.search_type === 'reference' ? (
+                                  <BookText className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <SearchIcon className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                                  {search.search_query}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {search.search_type === 'reference' ? 'Raamatunviite' : 'Tekstihaku'} • {search.version_code}
+                                </p>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                ) : isLoading ? (
                   <div className="text-center py-8 text-sm text-muted-foreground">
                     Ladataan...
                   </div>
