@@ -119,7 +119,13 @@ serve(async (req) => {
       console.error('Error fetching audio cues:', cuesError);
     }
 
-    let audioData = null;
+    // Initialize audio data structure (always return an object)
+    let audioData = {
+      available: false,
+      url: null,
+      startTime: null,
+      endTime: null
+    };
 
     if (audioCues && audioCues.length > 0) {
       // Get audio asset for the first cue (they should all be from same audio file)
@@ -137,10 +143,10 @@ serve(async (req) => {
         const endMs = Math.max(...audioCues.map((cue: AudioCue) => cue.end_ms || cue.start_ms));
 
         audioData = {
+          available: true,
           url: audioAsset.file_url,
           startTime: startMs / 1000, // Convert to seconds
-          endTime: endMs / 1000,     // Convert to seconds
-          available: true
+          endTime: endMs / 1000      // Convert to seconds
         };
 
         console.log('Audio data:', audioData);
@@ -161,9 +167,7 @@ serve(async (req) => {
         number: v.verse_number,
         text: v.text_content
       })),
-      audio: audioData || {
-        available: false
-      },
+      audio: audioData,
       link: `https://iryqgmjauybluwnqhxbg.supabase.co/?book=${encodeURIComponent(firstVerse.book_name)}&chapter=${chapter}&verse=${startVerse}`
     };
 
@@ -193,16 +197,18 @@ serve(async (req) => {
 /**
  * Parse Bible reference string
  * Supports formats:
- * - "Joh.3:16" (single verse)
- * - "Joh.3:16-18" (verse range)
+ * - "Joh.3:16" or "Joh.3.16" (single verse)
+ * - "Joh.3:16-18" or "Joh 3.16-18" (verse range)
  * - "Johannes 3:16-18" (with full book name)
+ * - "John 3:16-18" (English names)
  */
 function parseReference(ref: string): { book: string; chapter: number; startVerse: number; endVerse?: number } | null {
   // Remove extra whitespace
   ref = ref.trim();
 
-  // Common abbreviations mapping
+  // Common abbreviations mapping (Finnish and English)
   const abbreviations: Record<string, string> = {
+    // Finnish abbreviations
     'Matt': 'Matteus',
     'Matt.': 'Matteus',
     'Mark': 'Markus',
@@ -250,11 +256,46 @@ function parseReference(ref: string): { book: string; chapter: number; startVers
     '2.Joh': '2. Johanneksen kirje',
     '3.Joh': '3. Johanneksen kirje',
     'Ilm': 'Johanneksen ilmestys',
-    'Ilm.': 'Johanneksen ilmestys'
+    'Ilm.': 'Johanneksen ilmestys',
+    
+    // English abbreviations
+    'John': 'Johannes',
+    'Matthew': 'Matteus',
+    'Luke': 'Luukas',
+    'Gen': '1. Mooseksen kirja',
+    'Gen.': '1. Mooseksen kirja',
+    'Genesis': '1. Mooseksen kirja',
+    'Exod': '2. Mooseksen kirja',
+    'Exod.': '2. Mooseksen kirja',
+    'Exodus': '2. Mooseksen kirja',
+    'Lev': '3. Mooseksen kirja',
+    'Lev.': '3. Mooseksen kirja',
+    'Leviticus': '3. Mooseksen kirja',
+    'Num': '4. Mooseksen kirja',
+    'Num.': '4. Mooseksen kirja',
+    'Numbers': '4. Mooseksen kirja',
+    'Deut': '5. Mooseksen kirja',
+    'Deut.': '5. Mooseksen kirja',
+    'Deuteronomy': '5. Mooseksen kirja',
+    'Rom': 'Kirje roomalaisille',
+    'Rom.': 'Kirje roomalaisille',
+    'Romans': 'Kirje roomalaisille',
+    'Gal': 'Kirje galatalaisille',
+    'Galatians': 'Kirje galatalaisille',
+    'Eph': 'Kirje efesolaisille',
+    'Eph.': 'Kirje efesolaisille',
+    'Ephesians': 'Kirje efesolaisille',
+    'Phil': 'Kirje filippiläisille',
+    'Phil.': 'Kirje filippiläisille',
+    'Philippians': 'Kirje filippiläisille',
+    'Rev': 'Johanneksen ilmestys',
+    'Rev.': 'Johanneksen ilmestys',
+    'Revelation': 'Johanneksen ilmestys'
   };
 
-  // Try to match pattern: "Book Chapter:Verse" or "Book Chapter:Verse-Verse"
-  const match = ref.match(/^([^0-9]+?)\s*(\d+):(\d+)(?:-(\d+))?$/);
+  // Try to match pattern: "Book Chapter:Verse" or "Book Chapter.Verse" or "Book Chapter:Verse-Verse"
+  // Support both : and . as separators, and optional spaces around -
+  const match = ref.match(/^([^0-9]+?)\s*(\d+)[.:](\d+)(?:\s*-\s*(\d+))?$/);
   
   if (!match) {
     return null;
