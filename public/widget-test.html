@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raamattu Widget - Testi</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+    
+    h1 {
+      font-size: 36px;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .subtitle {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    
+    .section {
+      margin-bottom: 40px;
+    }
+    
+    .section-title {
+      color: white;
+      font-size: 24px;
+      margin-bottom: 20px;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .info-box {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .info-box h3 {
+      color: #1e293b;
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+    
+    .info-box p {
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    
+    .info-box code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      color: #3b82f6;
+    }
+    
+    .example-label {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      padding-left: 4px;
+      opacity: 0.9;
+    }
+    
+    footer {
+      text-align: center;
+      color: white;
+      margin-top: 60px;
+      opacity: 0.8;
+      font-size: 14px;
+    }
+    
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🕊️ Raamattu Widget</h1>
+      <p class="subtitle">Upota Raamatun jakeita verkkosivullesi</p>
+    </header>
+
+    <div class="info-box">
+      <h3>Käyttöohje</h3>
+      <p>
+        <strong>1.</strong> Lisää widget-skripti sivullesi:<br>
+        <code>&lt;script src="https://yourdomain.com/widget.js"&gt;&lt;/script&gt;</code>
+      </p>
+      <p>
+        <strong>2.</strong> Lisää widget-elementti:<br>
+        <code>&lt;div class="rn-bible" data-ref="Joh.3:16"&gt;&lt;/div&gt;</code>
+      </p>
+      <p>
+        <strong>3.</strong> Vaihtoehtoisesti määritä käännös:<br>
+        <code>&lt;div class="rn-bible" data-ref="Joh.3:16" data-version="finpr_finn"&gt;&lt;/div&gt;</code>
+      </p>
+    </div>
+
+    <!-- Yksittäiset jakeet -->
+    <div class="section">
+      <h2 class="section-title">Yksittäiset jakeet</h2>
+      
+      <div class="example-label">Johannes 3:16 (Oletuskäännös: STLK 2017)</div>
+      <div class="rn-bible" data-ref="Joh.3:16"></div>
+      
+      <div class="example-label">Johannes 3:16 (Pyhä Raamattu 1933/1938)</div>
+      <div class="rn-bible" data-ref="Joh.3:16" data-version="finpr_finn"></div>
+      
+      <div class="example-label">1. Mooseksen 1:1</div>
+      <div class="rn-bible" data-ref="1. Moos.1:1"></div>
+    </div>
+
+    <!-- Jakeiden vaihteluvälit -->
+    <div class="section">
+      <h2 class="section-title">Jakeiden vaihteluvälit</h2>
+      
+      <div class="example-label">Johannes 3:16-17</div>
+      <div class="rn-bible" data-ref="Joh.3:16-17"></div>
+      
+      <div class="example-label">1. Mooseksen 1:1-3 (Pyhä Raamattu 1933/1938)</div>
+      <div class="rn-bible" data-ref="1 Moos.1:1-3" data-version="finpr_finn"></div>
+      
+      <div class="example-label">Psalmien kirja 23:1-4</div>
+      <div class="rn-bible" data-ref="Ps.23:1-4"></div>
+    </div>
+
+    <!-- Numeroilla alkavat kirjat -->
+    <div class="section">
+      <h2 class="section-title">Numeroilla alkavat kirjat</h2>
+      
+      <div class="example-label">1. Johanneksen kirje 4:8</div>
+      <div class="rn-bible" data-ref="1. Joh.4:8"></div>
+      
+      <div class="example-label">2. Johanneksen kirje 1:1-3</div>
+      <div class="rn-bible" data-ref="2 Joh.1:1-3"></div>
+      
+      <div class="example-label">3. Johanneksen kirje 1:1 (ilman pistettä)</div>
+      <div class="rn-bible" data-ref="3 Joh.1:1"></div>
+      
+      <div class="example-label">1. Korinttilaisille 13:4-7</div>
+      <div class="rn-bible" data-ref="1 Kor.13:4-7"></div>
+    </div>
+
+    <!-- Englantilaiset lyhenteet -->
+    <div class="section">
+      <h2 class="section-title">Englantilaiset lyhenteet</h2>
+      
+      <div class="example-label">John 3:16 (englantilainen lyhenne)</div>
+      <div class="rn-bible" data-ref="John 3:16"></div>
+      
+      <div class="example-label">Genesis 1:1-3</div>
+      <div class="rn-bible" data-ref="Gen.1:1-3"></div>
+      
+      <div class="example-label">Romans 8:28</div>
+      <div class="rn-bible" data-ref="Rom.8:28"></div>
+    </div>
+
+    <!-- Eri erottimet -->
+    <div class="section">
+      <h2 class="section-title">Eri erottimet (: ja .)</h2>
+      
+      <div class="example-label">Kaksoispisteellä: Joh.3:16</div>
+      <div class="rn-bible" data-ref="Joh.3:16"></div>
+      
+      <div class="example-label">Pisteellä: Joh.3.16</div>
+      <div class="rn-bible" data-ref="Joh.3.16"></div>
+      
+      <div class="example-label">Vaihteluväli kaksoispisteellä: Matt.5:3-10</div>
+      <div class="rn-bible" data-ref="Matt.5:3-10"></div>
+    </div>
+
+    <!-- Testaa virhetilanteet -->
+    <div class="section">
+      <h2 class="section-title">Virhetilanteet</h2>
+      
+      <div class="example-label">Virheellinen viittaus (pitäisi näyttää virhe)</div>
+      <div class="rn-bible" data-ref="EiOleTällaista.999:999"></div>
+      
+      <div class="example-label">Tyhjä data-ref (pitäisi näyttää virhe)</div>
+      <div class="rn-bible" data-ref=""></div>
+    </div>
+
+    <div class="info-box">
+      <h3>💡 Huomioita</h3>
+      <p>
+        • Widget käyttää Shadow DOM:ia, joten sen tyylit eivät vuoda sivulle eivätkä sivun tyylit vaikuta widgetiin.
+      </p>
+      <p>
+        • Audio-tuki riippuu käännöksestä. Jos ääntä ei ole saatavilla, soittopainike on disabloitu.
+      </p>
+      <p>
+        • Widget tukee sekä yksittäisiä jakeita että jakeiden vaihteluvälejä (esim. Joh.3:16-17).
+      </p>
+      <p>
+        • Tuetut erottimet: kaksoispiste (:) ja piste (.) luvun ja jakeen välissä.
+      </p>
+      <p>
+        • Widget latautuu automaattisesti kun sivu latautuu, ja se tukee myös dynaamisesti lisättyjä elementtejä.
+      </p>
+    </div>
+
+    <footer>
+      <p>
+        Widget powered by <a href="https://lovable.dev" target="_blank">Lovable</a>
+      </p>
+    </footer>
+  </div>
+
+  <!-- Load the widget script -->
+  <script src="/widget.js"></script>
+  
+  <!-- Optional: Manual initialization example -->
+  <script>
+    // Widget initializes automatically, but you can also manually initialize:
+    // window.RNBibleWidget.init();
+    
+    // Or initialize a specific element:
+    // const element = document.querySelector('.rn-bible');
+    // window.RNBibleWidget.initElement(element);
+  </script>
+</body>
+</html>
