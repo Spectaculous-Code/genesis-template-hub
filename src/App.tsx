@@ -11,6 +11,7 @@ import AuthPage from "./pages/AuthPage";
 import ProfilePage from "./pages/ProfilePage";
 import SummaryPage from "./pages/SummaryPage";
 import SearchPage from "./pages/SearchPage";
+import WidgetConfigPage from "./pages/WidgetConfigPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/summaries" element={<SummaryPage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/widget-config" element={<WidgetConfigPage />} />
             <Route path="/study/:book/:chapter/:verse" element={<VerseStudyPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

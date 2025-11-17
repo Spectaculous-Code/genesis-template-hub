@@ -1,22 +1,90 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, ExternalLink } from "lucide-react";
+import { Copy, Check, ExternalLink, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const WidgetConfigPageContent = () => {
   const { toast } = useToast();
-  const [appUrl, setAppUrl] = useState("https://9cae91d3-5fc1-4587-a550-1da914e11c66.lovableproject.com");
-  const [embedUrl, setEmbedUrl] = useState("https://iryqgmjauybluwnqhxbg.supabase.co/functions/v1/embed");
+  const [appUrl, setAppUrl] = useState("");
+  const [embedUrl, setEmbedUrl] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Empty handlers for sidebar (not needed on config page)
   const handleNavigateToContinueAudio = () => {};
   const handleNavigateToContinueText = () => {};
+
+  // Load settings from database
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('key, value')
+        .in('key', ['app_url', 'embed_api_url']);
+
+      if (error) throw error;
+
+      if (data) {
+        const settings = Object.fromEntries(data.map(s => [s.key, s.value]));
+        setAppUrl(settings.app_url || '');
+        setEmbedUrl(settings.embed_api_url || '');
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      toast({
+        title: "Virhe",
+        description: "Asetusten lataaminen epäonnistui",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveSettings = async () => {
+    setSaving(true);
+    try {
+      const updates = [
+        { key: 'app_url', value: appUrl },
+        { key: 'embed_api_url', value: embedUrl }
+      ];
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('app_settings')
+          .update({ value: update.value })
+          .eq('key', update.key);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Tallennettu",
+        description: "Asetukset tallennettu onnistuneesti!",
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast({
+        title: "Virhe",
+        description: "Asetusten tallennus epäonnistui",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const widgetCode = `<!-- Lisää tämä sivun <head>-osioon -->
 <script src="${appUrl}/widget.js" defer></script>
@@ -37,6 +105,22 @@ const WidgetConfigPageContent = () => {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full overflow-hidden bg-background">
+        <AppSidebar 
+          onNavigateToContinueAudio={handleNavigateToContinueAudio}
+          onNavigateToContinueText={handleNavigateToContinueText}
+        />
+        <main className="flex-1 overflow-y-auto">
+          <div className="container mx-auto p-6 max-w-4xl">
+            <p className="text-muted-foreground">Ladataan asetuksia...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <AppSidebar 
@@ -53,77 +137,45 @@ const WidgetConfigPageContent = () => {
           </div>
 
           <div className="space-y-6">
-            {/* App URL Configuration */}
+            {/* Configuration Settings */}
             <Card>
               <CardHeader>
-                <CardTitle>Sovelluksen URL</CardTitle>
+                <CardTitle>Yleiset asetukset</CardTitle>
                 <CardDescription>
-                  Tämä URL-osoite käytetään widgetin linkeissä, jotka ohjaavat käyttäjät sovellukseen
+                  Määritä sovelluksen URL-osoitteet
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="app-url">App URL</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="app-url"
-                      value={appUrl}
-                      onChange={(e) => setAppUrl(e.target.value)}
-                      placeholder="https://yourdomain.com"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => copyToClipboard(appUrl, "App URL")}
-                    >
-                      {copied === "App URL" ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
+                  <Label htmlFor="app-url">Sovelluksen URL</Label>
+                  <Input
+                    id="app-url"
+                    value={appUrl}
+                    onChange={(e) => setAppUrl(e.target.value)}
+                    placeholder="https://yourdomain.com"
+                  />
                   <p className="text-sm text-muted-foreground">
-                    Huom: Muutokset vaativat myös APP_URL environment variablen päivitystä edge funktiossa
+                    Käytetään widget-linkeissä ohjaamaan käyttäjät sovellukseen
                   </p>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Embed API Configuration */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Embed API URL</CardTitle>
-                <CardDescription>
-                  Edge function URL josta widget hakee raamattujakeiden tiedot
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="embed-url">Embed API URL</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="embed-url"
-                      value={embedUrl}
-                      onChange={(e) => setEmbedUrl(e.target.value)}
-                      placeholder="https://your-project.supabase.co/functions/v1/embed"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => copyToClipboard(embedUrl, "Embed API URL")}
-                    >
-                      {copied === "Embed API URL" ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
+                  <Input
+                    id="embed-url"
+                    value={embedUrl}
+                    onChange={(e) => setEmbedUrl(e.target.value)}
+                    placeholder="https://project.supabase.co/functions/v1/embed"
+                  />
                   <p className="text-sm text-muted-foreground">
-                    Tämä URL pitää päivittää myös widget.js tiedostossa (API_BASE_URL)
+                    Edge Function osoite joka palvelee widget-dataa
                   </p>
                 </div>
+
+                <Button onClick={saveSettings} disabled={saving} className="w-full">
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? "Tallennetaan..." : "Tallenna asetukset"}
+                </Button>
               </CardContent>
             </Card>
 
@@ -159,78 +211,61 @@ const WidgetConfigPageContent = () => {
                     )}
                   </Button>
                 </div>
+                <Alert>
+                  <AlertDescription>
+                    <strong>Huom:</strong> Widgetin käyttö edellyttää widget.js -tiedoston päivitystä,
+                    jos muutat Embed API URL:ia. Tiedosto sijaitsee public/widget.js -kansiossa.
+                  </AlertDescription>
+                </Alert>
               </CardContent>
             </Card>
 
-            {/* Test Page */}
+            {/* Test Page Link */}
             <Card>
               <CardHeader>
                 <CardTitle>Testisivu</CardTitle>
                 <CardDescription>
-                  Avaa testisivu nähdäksesi widgetin toiminnassa
+                  Testaa widgetin toimintaa
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild variant="outline">
-                  <a href={testPageUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Avaa testisivu
-                  </a>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open(testPageUrl, '_blank')}
+                  className="w-full"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Avaa testisivu
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Documentation Links */}
+            {/* Documentation */}
             <Card>
               <CardHeader>
                 <CardTitle>Dokumentaatio</CardTitle>
                 <CardDescription>
-                  Lisätietoja widgetin käytöstä
+                  Widgetin käyttöohje ja esimerkit
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  <a
-                    href="https://github.com/yourusername/raamattu-widget#readme"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    README.md - Täydellinen dokumentaatio
-                  </a>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Tuetut viittausmuodot:</h3>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    <li>Yksittäinen jae: <code className="text-foreground">Joh.3:16</code></li>
+                    <li>Jaeväli: <code className="text-foreground">1.Moos.1:1-3</code></li>
+                    <li>Lyhyet lyhenteet: <code className="text-foreground">Joh.3:16</code></li>
+                    <li>Pitkät lyhenteet: <code className="text-foreground">Johannes 3:16</code></li>
+                    <li>Numeroidut kirjat: <code className="text-foreground">1.Moos</code> tai <code className="text-foreground">1 Moos</code></li>
+                  </ul>
                 </div>
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  <a
-                    href={testPageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    widget-test.html - Esimerkkejä
-                  </a>
+                <div>
+                  <h3 className="font-semibold mb-2">Parametrit:</h3>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    <li><code className="text-foreground">data-ref</code>: Raamatunpaikka (pakollinen)</li>
+                    <li><code className="text-foreground">data-version</code>: Käännösversio (valinnainen, oletus: finstlk201)</li>
+                  </ul>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Important Notes */}
-            <Card className="border-warning">
-              <CardHeader>
-                <CardTitle className="text-warning">⚠️ Tärkeää</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p>
-                  <strong>Environment Variablet:</strong> APP_URL pitää asettaa edge funktiossa (Supabase Secrets)
-                </p>
-                <p>
-                  <strong>Widget.js päivitys:</strong> Jos vaihdat Embed API URL:ia, muista päivittää myös 
-                  <code className="bg-muted px-1 py-0.5 rounded mx-1">public/widget.js</code> 
-                  tiedoston API_BASE_URL vakio
-                </p>
-                <p>
-                  <strong>CORS:</strong> Varmista että embed edge funktio sallii CORS-pyynnöt kaikilta domaineista
-                </p>
               </CardContent>
             </Card>
           </div>

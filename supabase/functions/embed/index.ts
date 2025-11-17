@@ -63,6 +63,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Fetch APP_URL from database settings
+    const { data: settingData } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'app_url')
+      .single();
+
+    const appUrl = settingData?.value || 'https://9cae91d3-5fc1-4587-a550-1da914e11c66.lovableproject.com';
+
     // Build verse array for RPC call
     const verses = endVerse 
       ? Array.from({ length: endVerse - startVerse + 1 }, (_, i) => startVerse + i)
@@ -158,9 +167,6 @@ serve(async (req) => {
     const reference = endVerse
       ? `${firstVerse.book_name} ${chapter}:${startVerse}-${endVerse}`
       : `${firstVerse.book_name} ${chapter}:${startVerse}`;
-
-    // Get app URL from environment or use default
-    const appUrl = Deno.env.get('APP_URL') || 'https://9cae91d3-5fc1-4587-a550-1da914e11c66.lovableproject.com';
 
     const response = {
       reference,
