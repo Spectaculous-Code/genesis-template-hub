@@ -159,6 +159,9 @@ serve(async (req) => {
       ? `${firstVerse.book_name} ${chapter}:${startVerse}-${endVerse}`
       : `${firstVerse.book_name} ${chapter}:${startVerse}`;
 
+    // Get app URL from environment or use default
+    const appUrl = Deno.env.get('APP_URL') || 'https://9cae91d3-5fc1-4587-a550-1da914e11c66.lovableproject.com';
+
     const response = {
       reference,
       version: versionName,
@@ -168,7 +171,7 @@ serve(async (req) => {
         text: v.text_content
       })),
       audio: audioData,
-      link: `https://iryqgmjauybluwnqhxbg.supabase.co/?book=${encodeURIComponent(firstVerse.book_name)}&chapter=${chapter}&verse=${startVerse}`
+      link: `${appUrl}/?book=${encodeURIComponent(firstVerse.book_name)}&chapter=${chapter}&verse=${startVerse}`
     };
 
     console.log('Returning response:', response);
