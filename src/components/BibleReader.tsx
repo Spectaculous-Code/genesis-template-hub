@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, MessageSquare, Database, Sparkles } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, MessageSquare, Database, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getChapterData, ChapterWithVerses, getNextChapter, getPreviousChapter, getBookChapters } from "@/lib/bibleService";
@@ -11,6 +11,7 @@ import InfoBox, { generateNextChapterInfo } from "./InfoBox";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { generateChapterAudio } from "@/lib/audioService";
+import { getChapterEstimatedTime } from "@/lib/audioEstimation";
 
 interface BibleReaderProps {
   book: string;
@@ -1022,6 +1023,12 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
             )}
           </div>
           <h2 className="text-xl text-muted-foreground">Luku {chapter}</h2>
+          {readerKey && chapterData?.verses && (
+            <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>Arvioitu kuunteluaika: {getChapterEstimatedTime(chapterData.verses)}</span>
+            </div>
+          )}
         </div>
         
         <Button 
