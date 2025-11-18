@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, MessageSquare, Database, Sparkles, Clock } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,7 +12,7 @@ import InfoBox, { generateNextChapterInfo } from "./InfoBox";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { generateChapterAudio } from "@/lib/audioService";
-import { getChapterEstimatedTime } from "@/lib/audioEstimation";
+import { getChapterEstimatedTime, formatListeningTime } from "@/lib/audioEstimation";
 
 interface BibleReaderProps {
   book: string;
@@ -55,6 +56,9 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioCues, setAudioCues] = useState<Array<{verse_id: string; verse_number: number; start_ms: number; end_ms: number}>>([]);
   const [audioFromCache, setAudioFromCache] = useState<boolean | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
 
@@ -560,6 +564,13 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       }
       
       const currentTimeMs = audio.currentTime * 1000;
+      
+      // Update progress
+      if (audio.duration) {
+        setAudioProgress((audio.currentTime / audio.duration) * 100);
+        setAudioCurrentTime(audio.currentTime);
+      }
+      
       const currentCue = audioCues.find(
         cue => currentTimeMs >= cue.start_ms && currentTimeMs < cue.end_ms
       );
@@ -582,14 +593,22 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       }
     };
 
+    const handleLoadedMetadata = () => {
+      if (audio.duration) {
+        setAudioDuration(audio.duration);
+      }
+    };
+
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
     audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
     return () => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
     };
   }, [toast, audioCues, currentVerse]);
 
@@ -598,6 +617,9 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     setAudioUrl(null);
     setAudioCues([]);
     setIsPlaying(false);
+    setAudioProgress(0);
+    setAudioDuration(0);
+    setAudioCurrentTime(0);
     onPlaybackStateChange?.(false);
     if (audioRef.current) {
       audioRef.current.pause();
@@ -1027,6 +1049,21 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
             <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
               <span>Arvioitu kuunteluaika: {getChapterEstimatedTime(chapterData.verses)}</span>
+            </div>
+          )}
+          
+          {/* Audio Progress Bar */}
+          {readerKey && audioUrl && (
+            <div className="mt-4 space-y-2 max-w-md mx-auto">
+              <Progress value={audioProgress} className="h-2" />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{formatListeningTime(Math.floor(audioCurrentTime))}</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Jäljellä: {formatListeningTime(Math.floor(audioDuration - audioCurrentTime))}
+                </span>
+                <span>{formatListeningTime(Math.floor(audioDuration))}</span>
+              </div>
             </div>
           )}
         </div>
