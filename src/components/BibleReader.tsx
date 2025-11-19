@@ -1045,27 +1045,6 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
             )}
           </div>
           <h2 className="text-xl text-muted-foreground">Luku {chapter}</h2>
-          {readerKey && chapterData?.verses && (
-            <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>Arvioitu kuunteluaika: {getChapterEstimatedTime(chapterData.verses)}</span>
-            </div>
-          )}
-          
-          {/* Audio Progress Bar */}
-          {readerKey && audioUrl && (
-            <div className="mt-4 space-y-2 max-w-md mx-auto">
-              <Progress value={audioProgress} className="h-2" />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{formatListeningTime(Math.floor(audioCurrentTime))}</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Jäljellä: {formatListeningTime(Math.floor(audioDuration - audioCurrentTime))}
-                </span>
-                <span>{formatListeningTime(Math.floor(audioDuration))}</span>
-              </div>
-            </div>
-          )}
         </div>
         
         <Button 
@@ -1079,6 +1058,36 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       </div>
 
 
+
+      {/* Floating Audio Info */}
+      {readerKey && (chapterData?.verses || audioUrl) && (
+        <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border shadow-sm">
+          <div className="container mx-auto px-4 py-3 space-y-3">
+            {/* Estimated Listening Time */}
+            {chapterData?.verses && (
+              <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>Arvioitu kuunteluaika: {getChapterEstimatedTime(chapterData.verses)}</span>
+              </div>
+            )}
+            
+            {/* Audio Progress Bar */}
+            {audioUrl && (
+              <div className="space-y-2 max-w-2xl mx-auto">
+                <Progress value={audioProgress} className="h-2" />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{formatListeningTime(Math.floor(audioCurrentTime))}</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Jäljellä: {formatListeningTime(Math.floor(audioDuration - audioCurrentTime))}
+                  </span>
+                  <span>{formatListeningTime(Math.floor(audioDuration))}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Bible Text */}
       <Card className="p-6">
