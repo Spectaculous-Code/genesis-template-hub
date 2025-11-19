@@ -1010,38 +1010,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   }
 
   return (
-    <>
-      {/* Floating Audio Info - Fixed at top */}
-      {readerKey && (chapterData?.verses || audioUrl) && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border shadow-sm">
-          <div className="max-w-4xl mx-auto px-6 py-3 space-y-3">
-            {/* Estimated Listening Time */}
-            {chapterData?.verses && (
-              <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Arvioitu kuunteluaika: {getChapterEstimatedTime(chapterData.verses)}</span>
-              </div>
-            )}
-            
-            {/* Audio Progress Bar */}
-            {audioUrl && (
-              <div className="space-y-2 max-w-2xl mx-auto">
-                <Progress value={audioProgress} className="h-2" />
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{formatListeningTime(Math.floor(audioCurrentTime))}</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Jäljellä: {formatListeningTime(Math.floor(audioDuration - audioCurrentTime))}
-                  </span>
-                  <span>{formatListeningTime(Math.floor(audioDuration))}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      <div className={`max-w-4xl mx-auto p-6 space-y-6 ${readerKey && (chapterData?.verses || audioUrl) ? 'mt-24' : ''}`}>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Chapter Header with Navigation */}
         <div className="flex items-center justify-between">
         <Button 
@@ -1087,6 +1056,55 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           <SkipForward className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Audio Info - Positioned between navigation and chapter title */}
+      {readerKey && (chapterData?.verses || audioUrl) && (
+        <div className="bg-card/50 backdrop-blur-sm border border-border rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            {/* Play/Pause Button */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={togglePlayback} 
+              disabled={isLoadingAudio}
+              className="shrink-0"
+            >
+              {isLoadingAudio ? (
+                <Volume2 className="h-4 w-4 animate-pulse" />
+              ) : isPlaying ? (
+                <Pause className="h-4 w-4" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+            </Button>
+
+            <div className="flex-1 space-y-2">
+              {/* Estimated Listening Time */}
+              {chapterData?.verses && !audioUrl && (
+                <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>Arvioitu kuunteluaika: {getChapterEstimatedTime(chapterData.verses)}</span>
+                </div>
+              )}
+              
+              {/* Audio Progress Bar */}
+              {audioUrl && (
+                <div className="space-y-1.5">
+                  <Progress value={audioProgress} className="h-2" />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{formatListeningTime(Math.floor(audioCurrentTime))}</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Jäljellä: {formatListeningTime(Math.floor(audioDuration - audioCurrentTime))}
+                    </span>
+                    <span>{formatListeningTime(Math.floor(audioDuration))}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bible Text */}
       <Card className="p-6">
@@ -1149,8 +1167,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           onClose={() => setShowInfoBox(false)}
         />
       )}
-      </div>
-    </>
+    </div>
   );
 });
 
