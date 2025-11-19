@@ -493,29 +493,9 @@ const MainContent = ({
             </div>
           </div>
 
-           {/* Audio Controls */}
+          {/* Bookmark Button */}
           {currentView === 'bible' && selectedBook && (
             <div className="flex items-center gap-2">
-               {hasAudioEnabled ? (
-                <Button variant="outline" size="sm" onClick={handlePlaybackToggle} disabled={isLoadingAudio}>
-                  {isLoadingAudio ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isPlaying ? (
-                    <Pause className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                </Button>
-              ) : versionSupportsAudio() ? (
-                <Button variant="outline" size="sm" onClick={handleGoToVoiceSettings}>
-                  <Settings className="h-4 w-4 mr-1" />
-                  Valitse ääni
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  Ei ääntä
-                </Button>
-              )}
               <Button variant="outline" size="sm" onClick={saveAsBookmark}>
                 <Bookmark className="h-4 w-4" />
               </Button>
