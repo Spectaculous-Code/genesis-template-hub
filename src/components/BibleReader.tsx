@@ -31,6 +31,8 @@ interface BibleReaderProps {
   onLoadingStateChange?: (isLoading: boolean) => void;
   shouldAutoplay?: boolean;
   onListeningPositionSaved?: (bookName: string, chapter: number, verse: number, versionCode: string) => void;
+  onAudioProgressChange?: (progress: number, currentTime: number, duration: number) => void;
+  onChapterDataChange?: (versesCount: number) => void;
 }
 
 export interface BibleReaderHandle {
@@ -38,7 +40,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false, onListeningPositionSaved }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false, onListeningPositionSaved, onAudioProgressChange, onChapterDataChange }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -90,6 +92,11 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       setLoading(true);
       const data = await getChapterData(book, chapter, versionCode);
       setChapterData(data);
+      
+      // Notify parent of chapter verses count
+      if (data?.verses && onChapterDataChange) {
+        onChapterDataChange(data.verses.length);
+      }
       
       // Load existing highlights for this chapter if user is logged in
       if (data && user) {
@@ -567,8 +574,14 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
       
       // Update progress
       if (audio.duration) {
-        setAudioProgress((audio.currentTime / audio.duration) * 100);
+        const progress = (audio.currentTime / audio.duration) * 100;
+        setAudioProgress(progress);
         setAudioCurrentTime(audio.currentTime);
+        
+        // Notify parent of progress change
+        if (onAudioProgressChange) {
+          onAudioProgressChange(progress, audio.currentTime, audio.duration);
+        }
       }
       
       const currentCue = audioCues.find(
@@ -596,6 +609,11 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     const handleLoadedMetadata = () => {
       if (audio.duration) {
         setAudioDuration(audio.duration);
+        
+        // Notify parent of duration
+        if (onAudioProgressChange) {
+          onAudioProgressChange(0, 0, audio.duration);
+        }
       }
     };
 
@@ -621,6 +639,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     setAudioDuration(0);
     setAudioCurrentTime(0);
     onPlaybackStateChange?.(false);
+    onAudioProgressChange?.(0, 0, 0);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
@@ -1056,55 +1075,6 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           <SkipForward className="h-4 w-4" />
         </Button>
       </div>
-
-      {/* Audio Info - Positioned between navigation and chapter title */}
-      {readerKey && (chapterData?.verses || audioUrl) && (
-        <div className="bg-card/50 backdrop-blur-sm border border-border rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-4">
-            {/* Play/Pause Button */}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={togglePlayback} 
-              disabled={isLoadingAudio}
-              className="shrink-0"
-            >
-              {isLoadingAudio ? (
-                <Volume2 className="h-4 w-4 animate-pulse" />
-              ) : isPlaying ? (
-                <Pause className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-            </Button>
-
-            <div className="flex-1 space-y-2">
-              {/* Estimated Listening Time */}
-              {chapterData?.verses && !audioUrl && (
-                <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  <span>Arvioitu kuunteluaika: {getChapterEstimatedTime(chapterData.verses)}</span>
-                </div>
-              )}
-              
-              {/* Audio Progress Bar */}
-              {audioUrl && (
-                <div className="space-y-1.5">
-                  <Progress value={audioProgress} className="h-2" />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{formatListeningTime(Math.floor(audioCurrentTime))}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Jäljellä: {formatListeningTime(Math.floor(audioDuration - audioCurrentTime))}
-                    </span>
-                    <span>{formatListeningTime(Math.floor(audioDuration))}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bible Text */}
       <Card className="p-6">

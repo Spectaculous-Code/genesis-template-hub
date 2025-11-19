@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2, Clock } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { getChapterEstimatedTime, formatListeningTime } from "@/lib/audioEstimation";
 import BibleReader from "./BibleReader";
 import UserSummaries from "./UserSummaries";
 import UserHighlights from "./UserHighlights";
@@ -64,6 +66,10 @@ const MainContent = ({
   const [hasManuallyNavigated, setHasManuallyNavigated] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [chapterVersesCount, setChapterVersesCount] = useState(0);
   const bibleReaderRef = useRef<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -369,6 +375,16 @@ const MainContent = ({
     navigate('/profile');
   };
 
+  const handleAudioProgressChange = (progress: number, currentTime: number, duration: number) => {
+    setAudioProgress(progress);
+    setAudioCurrentTime(currentTime);
+    setAudioDuration(duration);
+  };
+
+  const handleChapterDataChange = (versesCount: number) => {
+    setChapterVersesCount(versesCount);
+  };
+
   // Calculate current voice ID for audio controls
   const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
   const currentVoiceId = getVoiceForVersion(selectedVersion, currentVersionCode);
@@ -422,6 +438,8 @@ const MainContent = ({
             ref={bibleReaderRef}
             shouldAutoplay={shouldAutoplay}
             onListeningPositionSaved={onListeningPositionSaved}
+            onAudioProgressChange={handleAudioProgressChange}
+            onChapterDataChange={handleChapterDataChange}
           />
         );
     }
@@ -430,10 +448,12 @@ const MainContent = ({
   return (
     <div className="flex-1 flex flex-col">
       {/* Fixed Header with Bible location and controls */}
-      <div className="bg-card border-b border-border p-4 sticky top-0 z-40">
-        <div className="flex items-center justify-between">
-          {/* Bible Location and Version */}
-          <div className="flex items-center gap-4">
+      <div className="bg-card border-b border-border sticky top-0 z-40">
+        <div className="space-y-3 p-4">
+          {/* Top Row: Bible Location and Version + Bookmark */}
+          <div className="flex items-center justify-between">
+            {/* Bible Location and Version */}
+            <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               {/* Book Selection */}
               <Select value={selectedBook} onValueChange={onBookSelect}>
@@ -493,11 +513,68 @@ const MainContent = ({
             </div>
           </div>
 
-          {/* Bookmark Button */}
-          {currentView === 'bible' && selectedBook && (
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={saveAsBookmark}>
-                <Bookmark className="h-4 w-4" />
+            {/* Bookmark Button */}
+            {currentView === 'bible' && selectedBook && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={saveAsBookmark}>
+                  <Bookmark className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Row: Audio UI */}
+          {currentView === 'bible' && selectedBook && hasAudioEnabled && (
+            <div className="bg-muted/30 backdrop-blur-sm border border-border rounded-lg px-4 py-2">
+              <div className="flex items-center gap-4">
+                {/* Play/Pause Button */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handlePlaybackToggle} 
+                  disabled={isLoadingAudio}
+                  className="shrink-0"
+                >
+                  {isLoadingAudio ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                </Button>
+
+                <div className="flex-1 space-y-1.5">
+                  {/* Estimated Listening Time or Progress Bar */}
+                  {chapterVersesCount > 0 && audioDuration === 0 ? (
+                    <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground py-1">
+                      <Clock className="h-4 w-4" />
+                      <span>Arvioitu kuunteluaika: {formatListeningTime(Math.ceil(chapterVersesCount * 4.2))}</span>
+                    </div>
+                  ) : audioDuration > 0 ? (
+                    <>
+                      <Progress value={audioProgress} className="h-2" />
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{formatListeningTime(Math.floor(audioCurrentTime))}</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Jäljellä: {formatListeningTime(Math.floor(audioDuration - audioCurrentTime))}
+                        </span>
+                        <span>{formatListeningTime(Math.floor(audioDuration))}</span>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Audio not enabled message */}
+          {currentView === 'bible' && selectedBook && !hasAudioEnabled && versionSupportsAudio() && (
+            <div className="bg-muted/20 border border-border rounded-lg px-4 py-2 text-center">
+              <Button variant="ghost" size="sm" onClick={handleGoToVoiceSettings} className="text-muted-foreground hover:text-foreground">
+                <Settings className="h-4 w-4 mr-2" />
+                Valitse ääni profiilistasi
               </Button>
             </div>
           )}
