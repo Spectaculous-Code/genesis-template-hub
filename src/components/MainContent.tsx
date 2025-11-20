@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2, Clock } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getChapterEstimatedTime, formatListeningTime } from "@/lib/audioEstimation";
 import BibleReader from "./BibleReader";
@@ -371,6 +371,18 @@ const MainContent = ({
     }
   };
 
+  const handleNextVerse = () => {
+    if (bibleReaderRef.current) {
+      bibleReaderRef.current.seekToNextVerse();
+    }
+  };
+
+  const handlePreviousVerse = () => {
+    if (bibleReaderRef.current) {
+      bibleReaderRef.current.seekToPreviousVerse();
+    }
+  };
+
   const handleGoToVoiceSettings = () => {
     navigate('/profile');
   };
@@ -527,22 +539,46 @@ const MainContent = ({
           {currentView === 'bible' && selectedBook && hasAudioEnabled && (
             <div className="bg-muted/30 backdrop-blur-sm border border-border rounded-lg px-4 py-2">
               <div className="flex items-center gap-4">
-                {/* Play/Pause Button */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handlePlaybackToggle} 
-                  disabled={isLoadingAudio}
-                  className="shrink-0"
-                >
-                  {isLoadingAudio ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isPlaying ? (
-                    <Pause className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                </Button>
+                {/* Navigation and Play/Pause Buttons */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handlePreviousVerse}
+                    disabled={isLoadingAudio || !isPlaying}
+                    title="Edellinen jae"
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handlePlaybackToggle} 
+                    disabled={isLoadingAudio}
+                    className="h-8 w-8 p-0"
+                  >
+                    {isLoadingAudio ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : isPlaying ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleNextVerse}
+                    disabled={isLoadingAudio || !isPlaying}
+                    title="Seuraava jae"
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
 
                 <div className="flex-1 space-y-1.5">
                   {/* Estimated Listening Time or Progress Bar */}
