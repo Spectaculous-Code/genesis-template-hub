@@ -37,6 +37,8 @@ interface BibleReaderProps {
 
 export interface BibleReaderHandle {
   togglePlayback: () => void;
+  seekToNextVerse: () => void;
+  seekToPreviousVerse: () => void;
   isPlaying: boolean;
 }
 
@@ -72,11 +74,52 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     }
   }, [book, chapter]);
 
+  // Seek to next verse
+  const seekToNextVerse = () => {
+    if (!audioRef.current || audioCues.length === 0) return;
+    
+    const currentTimeMs = audioRef.current.currentTime * 1000;
+    const nextCue = audioCues.find(c => c.start_ms > currentTimeMs);
+    
+    if (nextCue) {
+      audioRef.current.currentTime = nextCue.start_ms / 1000;
+      setCurrentVerse(nextCue.verse_number);
+    }
+  };
+
+  // Seek to previous verse
+  const seekToPreviousVerse = () => {
+    if (!audioRef.current || audioCues.length === 0) return;
+    
+    const currentTimeMs = audioRef.current.currentTime * 1000;
+    const currentCue = audioCues.find(c => currentTimeMs >= c.start_ms && currentTimeMs < c.end_ms);
+    
+    if (currentCue) {
+      // If we're more than 2 seconds into the current verse, restart it
+      if (currentTimeMs - currentCue.start_ms > 2000) {
+        audioRef.current.currentTime = currentCue.start_ms / 1000;
+        setCurrentVerse(currentCue.verse_number);
+        return;
+      }
+    }
+    
+    // Otherwise go to previous verse
+    const reversedCues = [...audioCues].reverse();
+    const previousCue = reversedCues.find(c => c.start_ms < currentTimeMs - 100);
+    
+    if (previousCue) {
+      audioRef.current.currentTime = previousCue.start_ms / 1000;
+      setCurrentVerse(previousCue.verse_number);
+    }
+  };
+
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
     togglePlayback,
+    seekToNextVerse,
+    seekToPreviousVerse,
     isPlaying
-  }), [isPlaying, book, chapter, readerKey]);
+  }), [isPlaying, book, chapter, readerKey, audioCues]);
 
   // Remove the saveReadingPosition function as it's no longer needed for auto-save
   // Only explicit bookmark saves are done in MainContent.tsx
