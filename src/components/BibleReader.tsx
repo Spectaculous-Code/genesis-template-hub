@@ -93,13 +93,20 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     
     const currentTimeMs = audioRef.current.currentTime * 1000;
     
-    // Always go to previous verse
-    const reversedCues = [...audioCues].reverse();
-    const previousCue = reversedCues.find(c => c.start_ms < currentTimeMs - 100);
+    // Find current verse cue
+    const currentCueIndex = audioCues.findIndex(c => 
+      currentTimeMs >= c.start_ms && currentTimeMs < c.end_ms
+    );
     
-    if (previousCue) {
+    // If we have a previous verse, go to it
+    if (currentCueIndex > 0) {
+      const previousCue = audioCues[currentCueIndex - 1];
       audioRef.current.currentTime = previousCue.start_ms / 1000;
       setCurrentVerse(previousCue.verse_number);
+    } else if (currentCueIndex === 0) {
+      // Already at first verse, restart it
+      audioRef.current.currentTime = audioCues[0].start_ms / 1000;
+      setCurrentVerse(audioCues[0].verse_number);
     }
   };
 
