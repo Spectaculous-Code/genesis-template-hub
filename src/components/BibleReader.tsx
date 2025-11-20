@@ -92,18 +92,8 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     if (!audioRef.current || audioCues.length === 0) return;
     
     const currentTimeMs = audioRef.current.currentTime * 1000;
-    const currentCue = audioCues.find(c => currentTimeMs >= c.start_ms && currentTimeMs < c.end_ms);
     
-    if (currentCue) {
-      // If we're more than 2 seconds into the current verse, restart it
-      if (currentTimeMs - currentCue.start_ms > 2000) {
-        audioRef.current.currentTime = currentCue.start_ms / 1000;
-        setCurrentVerse(currentCue.verse_number);
-        return;
-      }
-    }
-    
-    // Otherwise go to previous verse
+    // Always go to previous verse
     const reversedCues = [...audioCues].reverse();
     const previousCue = reversedCues.find(c => c.start_ms < currentTimeMs - 100);
     
