@@ -33,6 +33,7 @@ interface BibleReaderProps {
   onListeningPositionSaved?: (bookName: string, chapter: number, verse: number, versionCode: string) => void;
   onAudioProgressChange?: (progress: number, currentTime: number, duration: number) => void;
   onChapterDataChange?: (versesCount: number) => void;
+  onAudioCacheStatusChange?: (audioFromCache: boolean | null) => void;
 }
 
 export interface BibleReaderHandle {
@@ -42,7 +43,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false, onListeningPositionSaved, onAudioProgressChange, onChapterDataChange }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false, onListeningPositionSaved, onAudioProgressChange, onChapterDataChange, onAudioCacheStatusChange }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -445,6 +446,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
           setAudioUrl(audioData.file_url);
           setAudioFromCache(audioData.from_cache ?? null);
+          onAudioCacheStatusChange?.(audioData.from_cache ?? null);
           
           // Audio cues now include verse_number from the API
           if (audioData.audio_cues) {
@@ -548,6 +550,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
                 
                 setAudioUrl(audioData.file_url);
                 setAudioFromCache(audioData.from_cache ?? null);
+                onAudioCacheStatusChange?.(audioData.from_cache ?? null);
                 
                 if (audioData.audio_cues) {
                   setAudioCues(audioData.audio_cues);
@@ -678,8 +681,10 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
     setAudioProgress(0);
     setAudioDuration(0);
     setAudioCurrentTime(0);
+    setAudioFromCache(null);
     onPlaybackStateChange?.(false);
     onAudioProgressChange?.(0, 0, 0);
+    onAudioCacheStatusChange?.(null);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
@@ -1081,29 +1086,9 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           Edellinen luku
         </Button>
         
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-3xl font-bold text-foreground">{getFinnishBookName(book)}</h1>
-            {audioFromCache !== null && readerKey && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 cursor-help">
-                      {audioFromCache ? (
-                        <Database className="h-3.5 w-3.5 text-muted-foreground" />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{audioFromCache ? 'Audio ladattu välimuistista' : 'Audio generoitu uutena'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-          <h2 className="text-xl text-muted-foreground">Luku {chapter}</h2>
+        <div className="text-center">
+          <h1 className="text-lg font-semibold text-foreground leading-tight">{getFinnishBookName(book)}</h1>
+          <h2 className="text-sm text-muted-foreground">Luku {chapter}</h2>
         </div>
         
         <Button 

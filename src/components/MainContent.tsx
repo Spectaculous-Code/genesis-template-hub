@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2, Clock, ChevronLeft, ChevronRight, Database, Sparkles } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getChapterEstimatedTime, formatListeningTime } from "@/lib/audioEstimation";
 import BibleReader from "./BibleReader";
@@ -70,6 +70,7 @@ const MainContent = ({
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
   const [chapterVersesCount, setChapterVersesCount] = useState(0);
+  const [audioFromCache, setAudioFromCache] = useState<boolean | null>(null);
   const bibleReaderRef = useRef<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -397,6 +398,10 @@ const MainContent = ({
     setChapterVersesCount(versesCount);
   };
 
+  const handleAudioCacheStatusChange = (fromCache: boolean | null) => {
+    setAudioFromCache(fromCache);
+  };
+
   // Calculate current voice ID for audio controls
   const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
   const currentVoiceId = getVoiceForVersion(selectedVersion, currentVersionCode);
@@ -452,6 +457,7 @@ const MainContent = ({
             onListeningPositionSaved={onListeningPositionSaved}
             onAudioProgressChange={handleAudioProgressChange}
             onChapterDataChange={handleChapterDataChange}
+            onAudioCacheStatusChange={handleAudioCacheStatusChange}
           />
         );
     }
@@ -539,6 +545,17 @@ const MainContent = ({
           {currentView === 'bible' && selectedBook && hasAudioEnabled && (
             <div className="bg-muted/30 backdrop-blur-sm border border-border rounded-lg px-4 py-2">
               <div className="flex items-center gap-4">
+                {/* Audio Status Icon */}
+                {audioFromCache !== null && hasAudioEnabled && (
+                  <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 shrink-0" title={audioFromCache ? 'Audio ladattu välimuistista' : 'Audio generoitu uutena'}>
+                    {audioFromCache ? (
+                      <Database className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    )}
+                  </div>
+                )}
+                
                 {/* Navigation and Play/Pause Buttons */}
                 <div className="flex items-center gap-1 shrink-0">
                   <Button 
