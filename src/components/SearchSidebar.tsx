@@ -115,6 +115,17 @@ export function SearchSidebar({
         firstGroup = newGroup;
       }
 
+      // Get version_id from versionCode
+      const { data: versionData } = await supabase
+        .from('bible_versions')
+        .select('id')
+        .eq('code', versionCode)
+        .single();
+
+      if (!versionData) {
+        throw new Error('Version not found');
+      }
+
       // Get the next reference order for this group
       const { data: existingRefs } = await supabase
         .from('summary_bible_references')
@@ -125,17 +136,18 @@ export function SearchSidebar({
 
       const nextOrder = existingRefs && existingRefs.length > 0 ? existingRefs[0].reference_order + 1 : 0;
 
-      // Format the verse reference (e.g., "Ilm.1:7")
+      // Format the verse reference (e.g., "1.Moos.3:4")
       const finnishBookName = getFinnishBookName(verse.book_name);
       const referenceText = `${finnishBookName}.${verse.chapter_number}:${verse.verse_number}`;
 
-      // Add the bible reference
+      // Add the bible reference with version_id
       const { error: refError } = await supabase
         .from('summary_bible_references')
         .insert({
           group_id: firstGroup.id,
           reference_text: referenceText,
-          reference_order: nextOrder
+          reference_order: nextOrder,
+          version_id: versionData.id
         });
 
       if (refError) throw refError;

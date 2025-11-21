@@ -1122,6 +1122,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
               }}
               book={book}
               chapter={chapter}
+              versionCode={versionCode}
             />
           ))}
         </div>

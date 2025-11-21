@@ -19,6 +19,7 @@ interface VerseHighlighterProps {
   onVerseClick: () => void;
   book?: string;
   chapter?: number;
+  versionCode?: string;
 }
 
 const VerseHighlighter = ({ 
@@ -28,7 +29,8 @@ const VerseHighlighter = ({
   onHighlight, 
   onVerseClick,
   book,
-  chapter
+  chapter,
+  versionCode = 'finstlk201'
 }: VerseHighlighterProps) => {
   const [showActions, setShowActions] = useState(false);
   const navigate = useNavigate();
@@ -47,6 +49,17 @@ const VerseHighlighter = ({
     }
 
     try {
+      // Get version_id from versionCode
+      const { data: versionData } = await supabase
+        .from('bible_versions')
+        .select('id')
+        .eq('code', versionCode)
+        .single();
+
+      if (!versionData) {
+        throw new Error('Version not found');
+      }
+
       // Get or create the latest summary
       let { data: latestSummary } = await supabase
         .from('summaries')
@@ -106,16 +119,17 @@ const VerseHighlighter = ({
 
       const nextOrder = existingRefs && existingRefs.length > 0 ? existingRefs[0].reference_order + 1 : 0;
 
-      // Format the verse reference (e.g., "Ilm.1:7")
+      // Format the verse reference using Finnish book name (e.g., "1.Moos.3:4")
       const referenceText = `${book}.${chapter}:${verse.number}`;
 
-      // Add the bible reference
+      // Add the bible reference with version_id
       const { error: refError } = await supabase
         .from('summary_bible_references')
         .insert({
           group_id: firstGroup.id,
           reference_text: referenceText,
-          reference_order: nextOrder
+          reference_order: nextOrder,
+          version_id: versionData.id
         });
 
       if (refError) throw refError;
