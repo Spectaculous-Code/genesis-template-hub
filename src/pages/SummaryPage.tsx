@@ -36,6 +36,7 @@ interface BibleReference {
   reference_text: string;
   reference_order: number;
   version_id: string | null;
+  version_code?: string;
 }
 
 const SummaryContent = () => {
@@ -105,7 +106,10 @@ const SummaryContent = () => {
               id,
               reference_text,
               reference_order,
-              version_id
+              version_id,
+              bible_versions (
+                code
+              )
             )
           )
         `)
@@ -127,7 +131,12 @@ const SummaryContent = () => {
         groups: summary.summary_groups
           .map(group => ({
             ...group,
-            bible_references: group.summary_bible_references.sort((a, b) => a.reference_order - b.reference_order)
+            bible_references: group.summary_bible_references
+              .map((ref: any) => ({
+                ...ref,
+                version_code: ref.bible_versions?.code
+              }))
+              .sort((a, b) => a.reference_order - b.reference_order)
           }))
           .sort((a, b) => a.group_order - b.group_order)
       })) || [];
@@ -761,7 +770,12 @@ const SummaryContent = () => {
                                                <Eye className="h-3 w-3" />
                                              )}
                                            </Button>
-                                           <span className="text-sm flex-1">• {ref.reference_text}</span>
+                                            <span className="text-sm flex-1">
+                                              • {ref.reference_text}
+                                              {ref.version_code && (
+                                                <span className="text-muted-foreground ml-1">({ref.version_code})</span>
+                                              )}
+                                            </span>
                                            
                                            {/* Move to group dropdown */}
                                            {latestSummary && latestSummary.groups.length > 1 && (
