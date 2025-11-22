@@ -116,7 +116,8 @@ export function SearchSidebar({
       }
 
       // Get version_id from versionCode
-      const { data: versionData } = await supabase
+      const { data: versionData } = await (supabase as any)
+        .schema('bible_schema')
         .from('bible_versions')
         .select('id')
         .eq('code', versionCode)
