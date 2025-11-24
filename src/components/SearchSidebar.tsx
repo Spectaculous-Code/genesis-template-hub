@@ -115,8 +115,9 @@ export function SearchSidebar({
         firstGroup = newGroup;
       }
 
-      // Get version_id from versionCode (use public schema for summaries foreign key)
-      const { data: versionData } = await supabase
+      // Get version_id from versionCode (use bible_schema)
+      const { data: versionData } = await (supabase as any)
+        .schema('bible_schema')
         .from('bible_versions')
         .select('id')
         .eq('code', versionCode)
