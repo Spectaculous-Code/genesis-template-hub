@@ -531,13 +531,6 @@ export type Database = {
             referencedRelation: "summary_groups"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "summary_bible_references_version_id_fkey"
-            columns: ["version_id"]
-            isOneToOne: false
-            referencedRelation: "bible_versions"
-            referencedColumns: ["id"]
-          },
         ]
       }
       summary_groups: {
