@@ -90,6 +90,7 @@ const SummaryContent = () => {
     if (!user) return;
 
     try {
+      // First, get summaries with their groups and references
       const { data: summariesData, error } = await supabase
         .from('summaries')
         .select(`
@@ -106,10 +107,7 @@ const SummaryContent = () => {
               id,
               reference_text,
               reference_order,
-              version_id,
-              bible_versions (
-                code
-              )
+              version_id
             )
           )
         `)
@@ -126,6 +124,32 @@ const SummaryContent = () => {
         return;
       }
 
+      // Get all unique version_ids
+      const versionIds = new Set<string>();
+      summariesData?.forEach(summary => {
+        summary.summary_groups?.forEach((group: any) => {
+          group.summary_bible_references?.forEach((ref: any) => {
+            if (ref.version_id) {
+              versionIds.add(ref.version_id);
+            }
+          });
+        });
+      });
+
+      // Fetch version codes from bible_schema
+      const versionCodesMap = new Map<string, string>();
+      if (versionIds.size > 0) {
+        const { data: versionsData } = await (supabase as any)
+          .schema('bible_schema')
+          .from('bible_versions')
+          .select('id, code')
+          .in('id', Array.from(versionIds));
+        
+        versionsData?.forEach((version: any) => {
+          versionCodesMap.set(version.id, version.code);
+        });
+      }
+
       const processedSummaries: Summary[] = summariesData?.map(summary => ({
         ...summary,
         groups: summary.summary_groups
@@ -134,7 +158,7 @@ const SummaryContent = () => {
             bible_references: group.summary_bible_references
               .map((ref: any) => ({
                 ...ref,
-                version_code: ref.bible_versions?.code
+                version_code: ref.version_id ? versionCodesMap.get(ref.version_id) : undefined
               }))
               .sort((a, b) => a.reference_order - b.reference_order)
           }))
