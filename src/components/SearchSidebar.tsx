@@ -10,7 +10,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SearchIcon, Sparkles, Clock, BookText, Plus } from "lucide-react";
-import { getFinnishBookName } from "@/lib/bookNameMapping";
+import { getFinnishBookName, getFinnishBookAbbreviation } from "@/lib/bookNameMapping";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -137,9 +137,10 @@ export function SearchSidebar({
 
       const nextOrder = existingRefs && existingRefs.length > 0 ? existingRefs[0].reference_order + 1 : 0;
 
-      // Format the verse reference (e.g., "1.Moos.3:4")
+      // Format the verse reference using Finnish book abbreviation (e.g., "1.Moos.1:1")
       const finnishBookName = getFinnishBookName(verse.book_name);
-      const referenceText = `${finnishBookName}.${verse.chapter_number}:${verse.verse_number}`;
+      const bookAbbrev = getFinnishBookAbbreviation(finnishBookName);
+      const referenceText = `${bookAbbrev}.${verse.chapter_number}:${verse.verse_number}`;
 
       // Add the bible reference with version_id
       const { error: refError } = await supabase
