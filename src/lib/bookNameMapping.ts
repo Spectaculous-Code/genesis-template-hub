@@ -107,3 +107,81 @@ const bookOrder: Record<string, number> = {
 export const getBookOrder = (bookName: string): number => {
   return bookOrder[bookName] || 999; // Unknown books go to the end
 };
+
+// Finnish book name abbreviations
+export const finnishBookAbbreviations: Record<string, string> = {
+  // Old Testament / Vanha testamentti
+  "1. Mooseksen kirja": "1.Moos",
+  "2. Mooseksen kirja": "2.Moos",
+  "3. Mooseksen kirja": "3.Moos",
+  "4. Mooseksen kirja": "4.Moos",
+  "5. Mooseksen kirja": "5.Moos",
+  "Joosuan kirja": "Joos",
+  "Tuomarien kirja": "Tuom",
+  "Ruutin kirja": "Ruut",
+  "1. Samuelin kirja": "1.Sam",
+  "2. Samuelin kirja": "2.Sam",
+  "1. Kuningasten kirja": "1.Kun",
+  "2. Kuningasten kirja": "2.Kun",
+  "1. Aikakirja": "1.Aik",
+  "2. Aikakirja": "2.Aik",
+  "Esran kirja": "Esra",
+  "Nehemian kirja": "Neh",
+  "Esterin kirja": "Est",
+  "Jobin kirja": "Job",
+  "Psalmien kirja": "Ps",
+  "Sananlaskujen kirja": "Sanl",
+  "Saarnaajan kirja": "Saar",
+  "Laulujen laulu": "LL",
+  "Jesajan kirja": "Jes",
+  "Jeremian kirja": "Jer",
+  "Valitusvirret": "Val",
+  "Hesekielin kirja": "Hes",
+  "Danielin kirja": "Dan",
+  "Hoosean kirja": "Hoos",
+  "Joelin kirja": "Joel",
+  "Aamoksen kirja": "Aam",
+  "Obadjan kirja": "Obad",
+  "Jonan kirja": "Jona",
+  "Miikan kirja": "Miik",
+  "Nahumin kirja": "Nah",
+  "Habakukin kirja": "Hab",
+  "Sefanjan kirja": "Sef",
+  "Haggain kirja": "Hagg",
+  "Sakarian kirja": "Sak",
+  "Malakian kirja": "Mal",
+  
+  // New Testament / Uusi testamentti
+  "Matteus": "Matt",
+  "Markus": "Mark",
+  "Luukas": "Luuk",
+  "Johannes": "Joh",
+  "Apostolien teot": "Apt",
+  "Kirje roomalaisille": "Room",
+  "1. Kor": "1.Kor",
+  "2. Kor": "2.Kor",
+  "Kirje galatalaisille": "Gal",
+  "Kirje efesolaisille": "Ef",
+  "Kirje filippiläisille": "Fil",
+  "Kirje kolossalaisille": "Kol",
+  "1. Tess": "1.Tess",
+  "2. Tess": "2.Tess",
+  "1. Tim": "1.Tim",
+  "2. Tim": "2.Tim",
+  "Kirje Titukselle": "Tiit",
+  "Kirje Filemonille": "Filem",
+  "Kirje heprealaisille": "Hepr",
+  "Jaakobin kirje": "Jaak",
+  "1. Pietarin kirje": "1.Piet",
+  "2. Pietarin kirje": "2.Piet",
+  "1. Johanneksen kirje": "1.Joh",
+  "2. Johanneksen kirje": "2.Joh",
+  "3. Johanneksen kirje": "3.Joh",
+  "Juudaan kirje": "Juud",
+  "Johanneksen ilmestys": "Ilm"
+};
+
+// Helper function to get Finnish book abbreviation
+export const getFinnishBookAbbreviation = (finnishName: string): string => {
+  return finnishBookAbbreviations[finnishName] || finnishName;
+};
