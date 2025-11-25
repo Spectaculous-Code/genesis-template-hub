@@ -5,7 +5,7 @@ import { Highlighter, MessageSquare, Share, BookOpen, Plus } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
-import { getFinnishBookAbbreviation } from "@/lib/bookNameMapping";
+import { getFinnishBookName, getFinnishBookAbbreviation } from "@/lib/bookNameMapping";
 
 interface Verse {
   number: number;
@@ -122,7 +122,8 @@ const VerseHighlighter = ({
       const nextOrder = existingRefs && existingRefs.length > 0 ? existingRefs[0].reference_order + 1 : 0;
 
       // Format the verse reference using Finnish book abbreviation (e.g., "1.Moos.1:1")
-      const bookAbbrev = getFinnishBookAbbreviation(book);
+      const finnishBookName = getFinnishBookName(book);
+      const bookAbbrev = getFinnishBookAbbreviation(finnishBookName);
       const referenceText = `${bookAbbrev}.${chapter}:${verse.number}`;
 
       // Add the bible reference with version_id
