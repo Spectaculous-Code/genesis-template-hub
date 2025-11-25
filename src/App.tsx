@@ -12,6 +12,7 @@ import ProfilePage from "./pages/ProfilePage";
 import SummaryPage from "./pages/SummaryPage";
 import SearchPage from "./pages/SearchPage";
 import WidgetConfigPage from "./pages/WidgetConfigPage";
+import WatchPage from "./pages/WatchPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/summaries" element={<SummaryPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/widget-config" element={<WidgetConfigPage />} />
+            <Route path="/watch" element={<WatchPage />} />
             <Route path="/study/:book/:chapter/:verse" element={<VerseStudyPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

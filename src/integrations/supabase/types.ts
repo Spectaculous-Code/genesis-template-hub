@@ -830,6 +830,80 @@ export type Database = {
           },
         ]
       }
+      video_clips: {
+        Row: {
+          created_at: string
+          description: string | null
+          host_type: string
+          host_video_id: string
+          id: string
+          is_published: boolean
+          order_index: number
+          series_slug: string
+          subtitle: string | null
+          thumbnail_url: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          host_type?: string
+          host_video_id: string
+          id?: string
+          is_published?: boolean
+          order_index: number
+          series_slug: string
+          subtitle?: string | null
+          thumbnail_url?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          host_type?: string
+          host_video_id?: string
+          id?: string
+          is_published?: boolean
+          order_index?: number
+          series_slug?: string
+          subtitle?: string | null
+          thumbnail_url?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_clips_series_slug_fkey"
+            columns: ["series_slug"]
+            isOneToOne: false
+            referencedRelation: "video_series"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      video_series: {
+        Row: {
+          created_at: string
+          description: string | null
+          slug: string
+          thumbnail_url: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          slug: string
+          thumbnail_url?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          slug?: string
+          thumbnail_url?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       chapter_verses_mv: {
