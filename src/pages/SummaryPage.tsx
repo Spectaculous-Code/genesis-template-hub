@@ -537,7 +537,7 @@ const SummaryContent = () => {
       const newTexts = new Map(verseTexts);
       if (verses && Array.isArray(verses) && verses.length > 0) {
         const verse = verses[0];
-        newTexts.set(referenceId, `${verse.osis} - ${verse.text_content}`);
+        newTexts.set(referenceId, `${referenceText} - ${verse.text_content}`);
       } else {
         newTexts.set(referenceId, `Jakeen "${referenceText}" tekstiä ei löytynyt tietokannasta.`);
       }
