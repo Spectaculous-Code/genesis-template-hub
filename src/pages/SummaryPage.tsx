@@ -471,14 +471,14 @@ const SummaryContent = () => {
     setLoadingVerses(newLoading);
 
     try {
-      // Parse the reference (e.g., "Matthew.1:2", "Matt.1:2", "1. Moos. 1:1")
+      // Parse the reference (e.g., "Matthew.1:2", "Matt.1:2", "1.Moos.1:1")
       const parseReference = (ref: string) => {
         // Remove extra spaces and normalize
         const normalized = ref.trim();
         
         // Try different patterns
-        // Pattern 1: "Matthew.1:2" or "Matt.1:2"
-        let match = normalized.match(/^([^.]+)\.(\d+):(\d+)$/);
+        // Pattern 1: "Matthew.1:2" or "Matt.1:2" or "1.Moos.1:2" (Finnish abbreviations)
+        let match = normalized.match(/^([\w.]+)\.(\d+):(\d+)$/);
         if (match) {
           return {
             book: match[1].trim(),
