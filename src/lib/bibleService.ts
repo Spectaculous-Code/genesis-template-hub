@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface BibleBook {
   id: string;
   name: string;
+  name_localized: string;
   testament: string;
   chapters_count: number;
   book_order: number;
@@ -84,7 +85,7 @@ export const getBibleBooks = async (versionCode: string = 'finstlk201'): Promise
     const booksResponse = await supabaseQuery
       .schema('bible_schema')
       .from('books')
-      .select('id, name, testament, chapters_count, book_order')
+      .select('id, name, name_localized, testament, chapters_count, book_order')
       .eq('version_id', versionResponse.data.id)
       .order('book_order');
 
@@ -101,12 +102,13 @@ export const getBibleBooks = async (versionCode: string = 'finstlk201'): Promise
     console.log('Books found:', booksResponse.data.length);
     
     // Log all book names for debugging
-    console.log('Available book names:', booksResponse.data.map((b: any) => b.name));
+    console.log('Available book names:', booksResponse.data.map((b: any) => `${b.name} / ${b.name_localized}`));
     
     // Map to our interface
     const books: BibleBook[] = booksResponse.data.map((book: any) => ({
       id: book.id,
       name: book.name,
+      name_localized: book.name_localized || book.name,
       testament: book.testament,
       chapters_count: book.chapters_count,
       book_order: book.book_order
