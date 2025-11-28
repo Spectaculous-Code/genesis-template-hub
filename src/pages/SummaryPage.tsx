@@ -471,14 +471,14 @@ const SummaryContent = () => {
     setLoadingVerses(newLoading);
 
     try {
-      // Parse the reference (e.g., "Matthew.1:2", "Matt.1:2", "1.Moos.1:1")
+      // Parse the reference (e.g., "Matthew.1:2", "Matt.1:2", "1.Moos.1:1", "1 Peter.1:1")
       const parseReference = (ref: string) => {
         // Remove extra spaces and normalize
         const normalized = ref.trim();
         
         // Try different patterns
-        // Pattern 1: "Matthew.1:2" or "Matt.1:2" or "1.Moos.1:2" (Finnish abbreviations)
-        let match = normalized.match(/^([\w.]+)\.(\d+):(\d+)$/);
+        // Pattern 1: "1 Peter.1:1" or "2 John.3:5" (number + space + name, period or colon separator)
+        let match = normalized.match(/^(\d+\s+\w+)\.(\d+)[.:](\d+)$/);
         if (match) {
           return {
             book: match[1].trim(),
@@ -487,7 +487,17 @@ const SummaryContent = () => {
           };
         }
         
-        // Pattern 2: "Matthew 1:2" or "Matt 1:2"
+        // Pattern 2: "Matthew.1:2" or "Matt.1:2" or "1.Moos.1:2" (Finnish abbreviations)
+        match = normalized.match(/^([\w.]+)\.(\d+):(\d+)$/);
+        if (match) {
+          return {
+            book: match[1].trim(),
+            chapter: parseInt(match[2]),
+            verse: parseInt(match[3])
+          };
+        }
+        
+        // Pattern 3: "Matthew 1:2" or "Matt 1:2"
         match = normalized.match(/^([^0-9]+)\s+(\d+):(\d+)$/);
         if (match) {
           return {
@@ -497,7 +507,7 @@ const SummaryContent = () => {
           };
         }
         
-        // Pattern 3: "1. Moos. 1:1" (Finnish style)
+        // Pattern 4: "1. Moos. 1:1" (Finnish style)
         match = normalized.match(/^(\d+\.\s*\w+\.?)\s+(\d+):(\d+)$/);
         if (match) {
           return {
