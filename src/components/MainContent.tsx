@@ -477,7 +477,7 @@ const MainContent = ({
               <Select value={selectedBook} onValueChange={onBookSelect}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Valitse kirja">
-                    {selectedBook || "Valitse kirja"}
+                    {selectedBook ? (bibleBooks.find(b => b.name === selectedBook)?.name_localized || selectedBook) : "Valitse kirja"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50 max-w-[300px]">
@@ -487,7 +487,7 @@ const MainContent = ({
                       value={book.name}
                       className="pl-6 pr-2 text-left"
                     >
-                      {book.name}
+                      {book.name_localized}
                     </SelectItem>
                   ))}
                 </SelectContent>
