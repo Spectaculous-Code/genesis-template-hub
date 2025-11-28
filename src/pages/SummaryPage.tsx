@@ -443,7 +443,7 @@ const SummaryContent = () => {
     }
   };
 
-  const toggleVerseExpansion = async (referenceId: string, referenceText: string) => {
+  const toggleVerseExpansion = async (referenceId: string, referenceText: string, versionCode?: string) => {
     const isExpanded = expandedVerses.has(referenceId);
     
     if (isExpanded) {
@@ -454,7 +454,7 @@ const SummaryContent = () => {
     } else {
       // Expand verse - first check if we already have the text
       if (!verseTexts.has(referenceId)) {
-        await fetchVerseText(referenceId, referenceText);
+        await fetchVerseText(referenceId, referenceText, versionCode);
       }
       
       const newExpanded = new Set(expandedVerses);
@@ -463,7 +463,7 @@ const SummaryContent = () => {
     }
   };
 
-  const fetchVerseText = async (referenceId: string, referenceText: string) => {
+  const fetchVerseText = async (referenceId: string, referenceText: string, versionCode?: string) => {
     if (loadingVerses.has(referenceId)) return;
     
     const newLoading = new Set(loadingVerses);
@@ -528,15 +528,15 @@ const SummaryContent = () => {
         return;
       }
 
-      console.log('Searching for verse:', parsed);
+      console.log('Searching for verse:', parsed, 'with version:', versionCode);
 
       // Use the dedicated get_verse_by_ref function
       const { data: verses, error } = await supabase.rpc('get_verse_by_ref' as any, {
         p_ref_book: parsed.book,
         p_chapter: parsed.chapter,
         p_verse: parsed.verse,
-        p_version_code: null, // Use default version (finstlk201)
-        p_language_code: 'fi'
+        p_version_code: versionCode || null, // Use specified version or default (finstlk201)
+        p_language_code: versionCode ? null : 'fi' // Only use language_code if no version specified
       });
 
       if (error) {
@@ -789,13 +789,13 @@ const SummaryContent = () => {
                                      {group.bible_references.map((ref) => (
                                        <li key={ref.id} className="group">
                                          <div className="flex items-center gap-2">
-                                           <Button
-                                             size="sm"
-                                             variant="ghost"
-                                             onClick={() => toggleVerseExpansion(ref.id, ref.reference_text)}
-                                             className="h-6 w-6 p-0 flex-shrink-0"
-                                             disabled={loadingVerses.has(ref.id)}
-                                           >
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => toggleVerseExpansion(ref.id, ref.reference_text, ref.version_code)}
+                                              className="h-6 w-6 p-0 flex-shrink-0"
+                                              disabled={loadingVerses.has(ref.id)}
+                                            >
                                              {loadingVerses.has(ref.id) ? (
                                                <div className="h-3 w-3 border border-muted-foreground border-t-transparent rounded-full animate-spin" />
                                              ) : expandedVerses.has(ref.id) ? (
