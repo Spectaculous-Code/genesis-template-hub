@@ -477,7 +477,7 @@ const MainContent = ({
               <Select value={selectedBook} onValueChange={onBookSelect}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Valitse kirja">
-                    {selectedBook ? getFinnishBookName(selectedBook) : "Valitse kirja"}
+                    {selectedBook || "Valitse kirja"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50 max-w-[300px]">
@@ -487,7 +487,7 @@ const MainContent = ({
                       value={book.name}
                       className="pl-6 pr-2 text-left"
                     >
-                      {getFinnishBookName(book.name)}
+                      {book.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
