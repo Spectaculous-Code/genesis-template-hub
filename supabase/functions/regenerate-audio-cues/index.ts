@@ -6,6 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface RegenerateRequest {
+  audio_id?: string; // Optional: regenerate specific audio
+  force?: boolean; // Force regeneration even if cues exist
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -14,20 +19,36 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log("Starting regeneration of missing audio cues...");
+    if (!elevenLabsKey) {
+      throw new Error("ELEVENLABS_API_KEY not configured");
+    }
 
-    // Find all audio assets that don't have cues
-    const { data: audioAssets, error: audioError } = await supabase
+    const { audio_id, force = false }: RegenerateRequest = req.method === "POST" 
+      ? await req.json() 
+      : {};
+
+    console.log("Starting regeneration of audio cues with ElevenLabs Forced Alignment...");
+
+    // Build query for audio assets
+    let query = supabase
       .from("audio_assets")
-      .select("id, chapter_id, version_id, duration_ms");
+      .select("id, chapter_id, version_id, duration_ms, file_url");
+
+    if (audio_id) {
+      query = query.eq("id", audio_id);
+      console.log(`Targeting specific audio: ${audio_id}`);
+    }
+
+    const { data: audioAssets, error: audioError } = await query;
 
     if (audioError) {
       throw new Error(`Failed to fetch audio assets: ${audioError.message}`);
     }
 
-    console.log(`Found ${audioAssets?.length || 0} total audio assets`);
+    console.log(`Found ${audioAssets?.length || 0} audio assets to process`);
 
     const results = {
       processed: 0,
@@ -38,7 +59,7 @@ serve(async (req) => {
 
     for (const asset of audioAssets || []) {
       try {
-        console.log(`Processing audio ${asset.id}, chapter: ${asset.chapter_id}, version: ${asset.version_id}`);
+        console.log(`Processing audio ${asset.id}, chapter: ${asset.chapter_id}`);
         
         // Check if cues already exist
         const { data: existingCues } = await supabase
@@ -47,15 +68,13 @@ serve(async (req) => {
           .eq("audio_id", asset.id)
           .limit(1);
 
-        if (existingCues && existingCues.length > 0) {
-          console.log(`Skipping audio ${asset.id} - cues already exist`);
+        if (existingCues && existingCues.length > 0 && !force) {
+          console.log(`Skipping audio ${asset.id} - cues exist (use force=true to regenerate)`);
           results.skipped++;
           continue;
         }
 
-        console.log(`Fetching verses for chapter ${asset.chapter_id}, version ${asset.version_id}`);
-        
-        // Fetch verses directly from bible_schema
+        // Fetch verses
         const { data: verses, error: versesError } = await supabase
           .schema('bible_schema')
           .from("verses")
@@ -65,35 +84,91 @@ serve(async (req) => {
           .eq("is_superseded", false)
           .order("verse_number", { ascending: true });
 
-        console.log(`Found ${verses?.length || 0} verses, error: ${versesError?.message || 'none'}`);
-
         if (versesError || !verses || verses.length === 0) {
           console.error(`No verses found for audio ${asset.id}:`, versesError);
           results.errors++;
           continue;
         }
 
-        // Calculate timing based on character count
-        const duration_ms = asset.duration_ms || Math.round((verses.reduce((sum, v) => sum + v.text.length, 0) / 5 / 150) * 60 * 1000);
-        
-        let currentTimeMs = 0;
-        const totalChars = verses.reduce((sum, v) => sum + v.text.length, 0);
-        const msPerChar = duration_ms / totalChars;
+        console.log(`Found ${verses.length} verses, fetching audio from ${asset.file_url}`);
 
+        // Download audio file from storage
+        const audioResponse = await fetch(asset.file_url);
+        if (!audioResponse.ok) {
+          throw new Error(`Failed to download audio: ${audioResponse.statusText}`);
+        }
+        const audioBlob = await audioResponse.blob();
+        
+        // Combine verses into full text (matching generation)
+        const fullText = verses.map((v) => v.text).join(" ");
+
+        console.log(`Sending to ElevenLabs Forced Alignment API...`);
+
+        // Call ElevenLabs Forced Alignment API
+        const formData = new FormData();
+        formData.append("file", audioBlob, "audio.mp3");
+        formData.append("transcript", fullText);
+
+        const alignResponse = await fetch(
+          "https://api.elevenlabs.io/v1/audio-native/align",
+          {
+            method: "POST",
+            headers: {
+              "xi-api-key": elevenLabsKey,
+            },
+            body: formData,
+          }
+        );
+
+        if (!alignResponse.ok) {
+          const errorText = await alignResponse.text();
+          console.error("ElevenLabs Alignment API error:", errorText);
+          throw new Error(`Alignment failed: ${alignResponse.status}`);
+        }
+
+        const alignmentData = await alignResponse.json();
+        console.log(`Received alignment data with ${alignmentData.alignment?.chars?.length || 0} characters`);
+
+        if (!alignmentData.alignment) {
+          throw new Error("No alignment data received from API");
+        }
+
+        // Calculate verse timings from character-level alignment
+        const { char_start_times_ms, char_end_times_ms, chars } = alignmentData.alignment;
+        
+        let charOffset = 0;
         const audioCues = verses.map((verse) => {
-          const verseChars = verse.text.length;
-          const verseDuration = Math.round(verseChars * msPerChar);
-          const cue = {
+          const startCharIndex = charOffset;
+          const endCharIndex = charOffset + verse.text.length - 1;
+          
+          // Ensure indices are within bounds
+          const start_ms = startCharIndex < char_start_times_ms.length 
+            ? Math.round(char_start_times_ms[startCharIndex])
+            : 0;
+          const end_ms = endCharIndex < char_end_times_ms.length
+            ? Math.round(char_end_times_ms[endCharIndex])
+            : start_ms + 1000;
+          
+          charOffset += verse.text.length + 1; // +1 for space separator
+          
+          return {
             audio_id: asset.id,
             verse_id: verse.id,
-            start_ms: currentTimeMs,
-            end_ms: currentTimeMs + verseDuration,
+            start_ms,
+            end_ms,
           };
-          currentTimeMs += verseDuration;
-          return cue;
         });
 
-        // Insert audio cues
+        // Delete existing cues if force mode
+        if (force && existingCues && existingCues.length > 0) {
+          await supabase
+            .from("audio_cues")
+            .delete()
+            .eq("audio_id", asset.id);
+          console.log(`Deleted ${existingCues.length} existing cues`);
+        }
+
+        // Insert new audio cues
         const { error: cuesError } = await supabase
           .from("audio_cues")
           .insert(audioCues);
@@ -102,7 +177,7 @@ serve(async (req) => {
           console.error(`Error inserting cues for audio ${asset.id}:`, cuesError);
           results.errors++;
         } else {
-          console.log(`Created ${audioCues.length} cues for audio ${asset.id}`);
+          console.log(`Created ${audioCues.length} precise cues for audio ${asset.id}`);
           results.created += audioCues.length;
           results.processed++;
         }
