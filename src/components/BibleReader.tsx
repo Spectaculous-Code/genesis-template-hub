@@ -34,6 +34,7 @@ interface BibleReaderProps {
   onAudioProgressChange?: (progress: number, currentTime: number, duration: number) => void;
   onChapterDataChange?: (versesCount: number) => void;
   onAudioCacheStatusChange?: (audioFromCache: boolean | null) => void;
+  onAudioIdChange?: (audioId: string | null) => void;
 }
 
 export interface BibleReaderHandle {
@@ -43,7 +44,7 @@ export interface BibleReaderHandle {
   isPlaying: boolean;
 }
 
-const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false, onListeningPositionSaved, onAudioProgressChange, onChapterDataChange, onAudioCacheStatusChange }, ref) => {
+const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, chapter, targetVerse, versionCode = 'finstlk201', readerKey, onBookSelect, onChapterSelect, onVerseSelect, showNextChapterInfo = true, isAppTitleNavigation = false, onNavigationComplete, isFromLatestPosition = false, onPlaybackStateChange, onLoadingStateChange, shouldAutoplay = false, onListeningPositionSaved, onAudioProgressChange, onChapterDataChange, onAudioCacheStatusChange, onAudioIdChange }, ref) => {
   console.log('BibleReader render - book:', book, 'chapter:', chapter, 'isAppTitleNavigation:', isAppTitleNavigation);
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -59,6 +60,7 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
   const [hasUserNavigated, setHasUserNavigated] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioId, setAudioId] = useState<string | null>(null);
   const [audioCues, setAudioCues] = useState<Array<{verse_id: string; verse_number: number; start_ms: number; end_ms: number}>>([]);
   const [audioFromCache, setAudioFromCache] = useState<boolean | null>(null);
   const [audioProgress, setAudioProgress] = useState(0);
@@ -445,8 +447,10 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
           
           const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
           setAudioUrl(audioData.file_url);
+          setAudioId(audioData.audio_id);
           setAudioFromCache(audioData.from_cache ?? null);
           onAudioCacheStatusChange?.(audioData.from_cache ?? null);
+          onAudioIdChange?.(audioData.audio_id);
           
           // Audio cues now include verse_number from the API
           if (audioData.audio_cues) {
@@ -549,8 +553,10 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
                 );
                 
                 setAudioUrl(audioData.file_url);
+                setAudioId(audioData.audio_id);
                 setAudioFromCache(audioData.from_cache ?? null);
                 onAudioCacheStatusChange?.(audioData.from_cache ?? null);
+                onAudioIdChange?.(audioData.audio_id);
                 
                 if (audioData.audio_cues) {
                   setAudioCues(audioData.audio_cues);
@@ -937,6 +943,8 @@ const BibleReader = forwardRef<BibleReaderHandle, BibleReaderProps>(({ book, cha
         
         const audioData = await generateChapterAudio(book, chapter, versionCode, readerKey);
         setAudioUrl(audioData.file_url);
+        setAudioId(audioData.audio_id);
+        onAudioIdChange?.(audioData.audio_id);
         
         // Audio cues now include verse_number from the API
         if (audioData.audio_cues) {
