@@ -653,8 +653,6 @@ const MainContent = ({
                     <ChevronRight className="h-4 w-4" />
                   </Button>
 
-                  {/* Regenerate Cues Button - commented out for now, will be enabled later */}
-                  {/* 
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -669,7 +667,6 @@ const MainContent = ({
                       <RefreshCw className="h-4 w-4" />
                     )}
                   </Button>
-                  */}
                 </div>
 
                 <div className="flex-1 space-y-1.5">
