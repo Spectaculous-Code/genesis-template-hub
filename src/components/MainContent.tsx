@@ -442,8 +442,11 @@ const MainContent = ({
         description: `Luotu ${data.results.created} tarkkaa audio cue -merkintää.`
       });
 
-      // Reload the page to fetch new cues
-      window.location.reload();
+      // Force re-fetch audio cues by stopping and restarting audio
+      if (isPlaying) {
+        setIsPlaying(false);
+        setTimeout(() => setIsPlaying(true), 100);
+      }
     } catch (error: any) {
       console.error('Error regenerating cues:', error);
       toast({

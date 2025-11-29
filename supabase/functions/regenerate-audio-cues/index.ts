@@ -107,10 +107,10 @@ serve(async (req) => {
         // Call ElevenLabs Forced Alignment API
         const formData = new FormData();
         formData.append("file", audioBlob, "audio.mp3");
-        formData.append("transcript", fullText);
+        formData.append("text", fullText);
 
         const alignResponse = await fetch(
-          "https://api.elevenlabs.io/v1/audio-native/align",
+          "https://api.elevenlabs.io/v1/audio-alignment",
           {
             method: "POST",
             headers: {
@@ -127,14 +127,14 @@ serve(async (req) => {
         }
 
         const alignmentData = await alignResponse.json();
-        console.log(`Received alignment data with ${alignmentData.alignment?.chars?.length || 0} characters`);
+        console.log(`Received alignment data with ${alignmentData.characters?.length || 0} characters`);
 
-        if (!alignmentData.alignment) {
+        if (!alignmentData.characters || alignmentData.characters.length === 0) {
           throw new Error("No alignment data received from API");
         }
 
         // Calculate verse timings from character-level alignment
-        const { char_start_times_ms, char_end_times_ms, chars } = alignmentData.alignment;
+        const characters = alignmentData.characters;
         
         let charOffset = 0;
         const audioCues = verses.map((verse) => {
@@ -142,11 +142,11 @@ serve(async (req) => {
           const endCharIndex = charOffset + verse.text.length - 1;
           
           // Ensure indices are within bounds
-          const start_ms = startCharIndex < char_start_times_ms.length 
-            ? Math.round(char_start_times_ms[startCharIndex])
+          const start_ms = startCharIndex < characters.length 
+            ? Math.round(characters[startCharIndex].start_time * 1000)
             : 0;
-          const end_ms = endCharIndex < char_end_times_ms.length
-            ? Math.round(char_end_times_ms[endCharIndex])
+          const end_ms = endCharIndex < characters.length
+            ? Math.round(characters[endCharIndex].end_time * 1000)
             : start_ms + 1000;
           
           charOffset += verse.text.length + 1; // +1 for space separator
