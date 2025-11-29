@@ -546,9 +546,11 @@ const MainContent = ({
             <div className="bg-muted/30 backdrop-blur-sm border border-border rounded-lg px-4 py-2">
               <div className="flex items-center gap-4">
                 {/* Audio Status Icon */}
-                {audioFromCache !== null && hasAudioEnabled && (
-                  <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 shrink-0" title={audioFromCache ? 'Audio ladattu välimuistista' : 'Audio generoitu uutena'}>
-                    {audioFromCache ? (
+                {(isLoadingAudio || audioFromCache !== null) && hasAudioEnabled && (
+                  <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted/50 shrink-0" title={isLoadingAudio ? 'Luodaan ääntä' : audioFromCache ? 'Audio ladattu välimuistista' : 'Audio generoitu uutena'}>
+                    {isLoadingAudio ? (
+                      <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
+                    ) : audioFromCache ? (
                       <Database className="h-3.5 w-3.5 text-muted-foreground" />
                     ) : (
                       <Sparkles className="h-3.5 w-3.5 text-primary" />
