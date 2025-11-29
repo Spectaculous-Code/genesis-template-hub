@@ -143,16 +143,21 @@ serve(async (req) => {
     console.log(`Generating TTS for ${verses.length} verses using ${reader_key}`);
 
     let audioBuffer: ArrayBuffer;
+    let characterTimestamps: { 
+      characters: string[];
+      character_start_times_seconds: number[];
+      character_end_times_seconds: number[];
+    } | null = null;
 
     if (provider === "elevenlabs") {
-      // ElevenLabs TTS
+      // ElevenLabs TTS with timestamps
       const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
       if (!elevenLabsKey) {
         throw new Error("ELEVENLABS_API_KEY not configured");
       }
 
       const ttsResponse = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voice}`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${voice}/with-timestamps`,
         {
           method: "POST",
           headers: {
@@ -176,7 +181,24 @@ serve(async (req) => {
         throw new Error(`ElevenLabs API error: ${ttsResponse.status}`);
       }
 
-      audioBuffer = await ttsResponse.arrayBuffer();
+      const responseData = await ttsResponse.json();
+      
+      // Decode base64 audio
+      const binaryString = atob(responseData.audio_base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      audioBuffer = bytes.buffer;
+
+      // Store character-level timestamps for precise cue calculation
+      if (responseData.alignment) {
+        characterTimestamps = {
+          characters: responseData.alignment.characters,
+          character_start_times_seconds: responseData.alignment.character_start_times_seconds,
+          character_end_times_seconds: responseData.alignment.character_end_times_seconds,
+        };
+      }
     } else {
       throw new Error(`Unsupported TTS provider: ${provider}`);
     }
@@ -229,23 +251,56 @@ serve(async (req) => {
     }
 
     // Create audio cues for verse timing
-    // Calculate approximate timing based on character count
-    let currentTimeMs = 0;
-    const totalChars = verses.reduce((sum, v) => sum + v.text.length, 0);
-    const msPerChar = duration_ms / totalChars;
+    let audioCues;
+    
+    if (characterTimestamps) {
+      // Use precise character-level timestamps from ElevenLabs
+      console.log("Using precise character-level timestamps for cues");
+      
+      let charOffset = 0;
+      audioCues = verses.map((verse) => {
+        const startCharIndex = charOffset;
+        const endCharIndex = charOffset + verse.text.length - 1;
+        
+        // Get start time from first character, end time from last character
+        const start_ms = Math.round(
+          characterTimestamps.character_start_times_seconds[startCharIndex] * 1000
+        );
+        const end_ms = Math.round(
+          characterTimestamps.character_end_times_seconds[endCharIndex] * 1000
+        );
+        
+        // Move offset forward (verse text + space separator)
+        charOffset += verse.text.length + 1;
+        
+        return {
+          audio_id: audioAsset.id,
+          verse_id: verse.id,
+          start_ms,
+          end_ms,
+        };
+      });
+    } else {
+      // Fallback: Calculate approximate timing based on character count
+      console.log("Using character-count estimation for cues");
+      
+      let currentTimeMs = 0;
+      const totalChars = verses.reduce((sum, v) => sum + v.text.length, 0);
+      const msPerChar = duration_ms / totalChars;
 
-    const audioCues = verses.map((verse) => {
-      const verseChars = verse.text.length;
-      const verseDuration = Math.round(verseChars * msPerChar);
-      const cue = {
-        audio_id: audioAsset.id,
-        verse_id: verse.id,
-        start_ms: currentTimeMs,
-        end_ms: currentTimeMs + verseDuration,
-      };
-      currentTimeMs += verseDuration;
-      return cue;
-    });
+      audioCues = verses.map((verse) => {
+        const verseChars = verse.text.length;
+        const verseDuration = Math.round(verseChars * msPerChar);
+        const cue = {
+          audio_id: audioAsset.id,
+          verse_id: verse.id,
+          start_ms: currentTimeMs,
+          end_ms: currentTimeMs + verseDuration,
+        };
+        currentTimeMs += verseDuration;
+        return cue;
+      });
+    }
 
     // Insert audio cues
     const { error: cuesError } = await supabase
