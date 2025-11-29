@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2, Clock, ChevronLeft, ChevronRight, Database, Sparkles } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Bookmark, Settings, Loader2, Clock, ChevronLeft, ChevronRight, Database, Sparkles, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getChapterEstimatedTime, formatListeningTime } from "@/lib/audioEstimation";
 import BibleReader from "./BibleReader";
@@ -71,6 +71,8 @@ const MainContent = ({
   const [audioDuration, setAudioDuration] = useState(0);
   const [chapterVersesCount, setChapterVersesCount] = useState(0);
   const [audioFromCache, setAudioFromCache] = useState<boolean | null>(null);
+  const [currentAudioId, setCurrentAudioId] = useState<string | null>(null);
+  const [isRegeneratingCues, setIsRegeneratingCues] = useState(false);
   const bibleReaderRef = useRef<any>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -402,6 +404,58 @@ const MainContent = ({
     setAudioFromCache(fromCache);
   };
 
+  const handleAudioIdChange = (audioId: string | null) => {
+    setCurrentAudioId(audioId);
+  };
+
+  const handleRegenerateCues = async () => {
+    if (!currentAudioId) {
+      toast({
+        title: "Virhe",
+        description: "Audio ID puuttuu. Lataa luku ensin.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsRegeneratingCues(true);
+      
+      toast({
+        title: "Regeneroidaan audio cues...",
+        description: "Tämä voi kestää hetken."
+      });
+
+      const { data, error } = await supabase.functions.invoke('regenerate-audio-cues', {
+        body: {
+          audio_id: currentAudioId,
+          force: true
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Onnistui!",
+        description: `Luotu ${data.results.created} tarkkaa audio cue -merkintää.`
+      });
+
+      // Reload the page to fetch new cues
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Error regenerating cues:', error);
+      toast({
+        title: "Virhe",
+        description: error.message || "Audio cues -regenerointi epäonnistui",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRegeneratingCues(false);
+    }
+  };
+
   // Calculate current voice ID for audio controls
   const currentVersionCode = bibleVersions.find(v => v.id === selectedVersion)?.code || 'finstlk201';
   const currentVoiceId = getVoiceForVersion(selectedVersion, currentVersionCode);
@@ -458,6 +512,7 @@ const MainContent = ({
             onAudioProgressChange={handleAudioProgressChange}
             onChapterDataChange={handleChapterDataChange}
             onAudioCacheStatusChange={handleAudioCacheStatusChange}
+            onAudioIdChange={handleAudioIdChange}
           />
         );
     }
@@ -597,6 +652,24 @@ const MainContent = ({
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
+
+                  {/* Regenerate Cues Button - commented out for now, will be enabled later */}
+                  {/* 
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleRegenerateCues}
+                    disabled={isLoadingAudio || isRegeneratingCues || !currentAudioId}
+                    title="Regeneroi audio cues (parempi synkronointi)"
+                    className="h-8 w-8 p-0 ml-2"
+                  >
+                    {isRegeneratingCues ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                  </Button>
+                  */}
                 </div>
 
                 <div className="flex-1 space-y-1.5">
