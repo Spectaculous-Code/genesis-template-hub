@@ -110,7 +110,7 @@ serve(async (req) => {
         formData.append("text", fullText);
 
         const alignResponse = await fetch(
-          "https://api.elevenlabs.io/v1/audio-alignment",
+          "https://api.elevenlabs.io/v1/forced-alignment",
           {
             method: "POST",
             headers: {
