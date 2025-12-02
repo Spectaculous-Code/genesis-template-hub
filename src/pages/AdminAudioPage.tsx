@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, ChevronDown, ChevronRight, ArrowLeft, Music, Clock, Database } from "lucide-react";
+import { Trash2, ChevronDown, ChevronRight, ArrowLeft, Music, Clock, Database, Loader2, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { ELEVENLABS_VOICES, getVoiceReaderKey } from "@/lib/elevenLabsVoices";
 
 interface AudioAsset {
   id: string;
@@ -52,8 +55,18 @@ export default function AdminAudioPage() {
   const [expandedBooks, setExpandedBooks] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
+  // Generation form state
+  const [genBooks, setGenBooks] = useState<{ id: string; name: string; chapters_count: number; version_id: string }[]>([]);
+  const [genVersions, setGenVersions] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<string>('');
+  const [selectedBook, setSelectedBook] = useState<string>('');
+  const [selectedChapter, setSelectedChapter] = useState<string>('');
+  const [selectedVoice, setSelectedVoice] = useState<string>(ELEVENLABS_VOICES[0]?.voiceId || '');
+  const [isGenerating, setIsGenerating] = useState(false);
+
   useEffect(() => {
     loadData();
+    loadGenerationData();
   }, []);
 
   const loadData = async () => {
@@ -83,6 +96,105 @@ export default function AdminAudioPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadGenerationData = async () => {
+    try {
+      // Load versions
+      const { data: versions } = await (supabase as any)
+        .schema('bible_schema')
+        .from('bible_versions')
+        .select('id, code, name')
+        .eq('is_active', true)
+        .order('code');
+      
+      setGenVersions(versions || []);
+      if (versions && versions.length > 0) {
+        setSelectedVersion(versions[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading generation data:', error);
+    }
+  };
+
+  // Load books when version changes
+  useEffect(() => {
+    const loadBooks = async () => {
+      if (!selectedVersion) return;
+      
+      const { data: books } = await (supabase as any)
+        .schema('bible_schema')
+        .from('books')
+        .select('id, name, chapters_count, version_id')
+        .eq('version_id', selectedVersion)
+        .order('book_order');
+      
+      setGenBooks(books || []);
+      setSelectedBook('');
+      setSelectedChapter('');
+    };
+    loadBooks();
+  }, [selectedVersion]);
+
+  const generateAudio = async () => {
+    if (!selectedBook || !selectedChapter || !selectedVoice || !selectedVersion) {
+      toast({
+        title: "Täytä kaikki kentät",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Find chapter_id from bible_schema
+    const { data: chapters } = await (supabase as any)
+      .schema('bible_schema')
+      .from('chapters')
+      .select('id')
+      .eq('book_id', selectedBook)
+      .eq('chapter_number', parseInt(selectedChapter));
+
+    if (!chapters || chapters.length === 0) {
+      toast({
+        title: "Lukua ei löytynyt",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const chapter_id = chapters[0].id;
+    const reader_key = getVoiceReaderKey(selectedVoice);
+
+    setIsGenerating(true);
+    try {
+      const response = await supabase.functions.invoke('generate-audio', {
+        body: {
+          chapter_id,
+          version_id: selectedVersion,
+          reader_key
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast({
+        title: "Audio generoitu",
+        description: response.data.from_cache ? "Käytettiin välimuistia" : "Uusi audio luotu"
+      });
+
+      // Reload data
+      loadData();
+    } catch (error: any) {
+      console.error('Generation error:', error);
+      toast({
+        title: "Generointi epäonnistui",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -354,6 +466,91 @@ export default function AdminAudioPage() {
             </CardHeader>
           </Card>
         </div>
+
+        {/* Audio Generation Form */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Play className="h-5 w-5" />
+              Generoi audio
+            </CardTitle>
+            <CardDescription>Generoi audio valitulle luvulle ElevenLabs TTS:llä</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+              <div className="space-y-2">
+                <Label>Versio</Label>
+                <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Valitse versio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {genVersions.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.code} - {v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Kirja</Label>
+                <Select value={selectedBook} onValueChange={(val) => { setSelectedBook(val); setSelectedChapter(''); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Valitse kirja" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {genBooks.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Luku</Label>
+                <Select value={selectedChapter} onValueChange={setSelectedChapter} disabled={!selectedBook}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Valitse luku" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedBook && genBooks.find(b => b.id === selectedBook) && 
+                      Array.from({ length: genBooks.find(b => b.id === selectedBook)!.chapters_count }, (_, i) => i + 1).map(ch => (
+                        <SelectItem key={ch} value={ch.toString()}>{ch}</SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Ääni</Label>
+                <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Valitse ääni" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ELEVENLABS_VOICES.map(v => (
+                      <SelectItem key={v.voiceId} value={v.voiceId}>{v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                onClick={generateAudio} 
+                disabled={isGenerating || !selectedBook || !selectedChapter}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generoidaan...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Generoi
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Book Statistics */}
         <Card className="mb-6">
