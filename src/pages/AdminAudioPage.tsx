@@ -64,6 +64,10 @@ export default function AdminAudioPage() {
   const [selectedVoice, setSelectedVoice] = useState<string>(ELEVENLABS_VOICES[0]?.voiceId || '');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Batch generation state
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, currentChapter: '' });
+
   useEffect(() => {
     loadData();
     loadGenerationData();
@@ -195,6 +199,96 @@ export default function AdminAudioPage() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const generateBatchAudio = async () => {
+    if (!selectedBook || !selectedVoice || !selectedVersion) {
+      toast({
+        title: "Valitse versio, kirja ja ääni",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const book = genBooks.find(b => b.id === selectedBook);
+    if (!book) return;
+
+    const totalChapters = book.chapters_count;
+    
+    if (!confirm(`Haluatko generoida audion kaikille ${totalChapters} luvulle kirjasta "${book.name}"? Tämä voi kestää useita minuutteja.`)) {
+      return;
+    }
+
+    setIsBatchGenerating(true);
+    setBatchProgress({ current: 0, total: totalChapters, currentChapter: '' });
+    
+    const reader_key = getVoiceReaderKey(selectedVoice);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (let chapterNum = 1; chapterNum <= totalChapters; chapterNum++) {
+        setBatchProgress({ current: chapterNum, total: totalChapters, currentChapter: `${book.name} ${chapterNum}` });
+
+        // Get chapter_id
+        const { data: chapters } = await (supabase as any)
+          .schema('bible_schema')
+          .from('chapters')
+          .select('id')
+          .eq('book_id', selectedBook)
+          .eq('chapter_number', chapterNum);
+
+        if (!chapters || chapters.length === 0) {
+          console.error(`Chapter ${chapterNum} not found`);
+          errorCount++;
+          continue;
+        }
+
+        const chapter_id = chapters[0].id;
+
+        try {
+          const response = await supabase.functions.invoke('generate-audio', {
+            body: {
+              chapter_id,
+              version_id: selectedVersion,
+              reader_key
+            }
+          });
+
+          if (response.error) {
+            console.error(`Error generating chapter ${chapterNum}:`, response.error);
+            errorCount++;
+          } else {
+            successCount++;
+            console.log(`Chapter ${chapterNum} generated:`, response.data.from_cache ? 'from cache' : 'new');
+          }
+        } catch (error: any) {
+          console.error(`Error generating chapter ${chapterNum}:`, error);
+          errorCount++;
+        }
+
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      toast({
+        title: "Massa-generointi valmis",
+        description: `Onnistui: ${successCount}, Virheitä: ${errorCount}`
+      });
+
+      // Reload data
+      loadData();
+    } catch (error: any) {
+      console.error('Batch generation error:', error);
+      toast({
+        title: "Massa-generointi epäonnistui",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsBatchGenerating(false);
+      setBatchProgress({ current: 0, total: 0, currentChapter: '' });
     }
   };
 
@@ -535,7 +629,7 @@ export default function AdminAudioPage() {
               </div>
               <div className="space-y-2">
                 <Label>Luku</Label>
-                <Select value={selectedChapter} onValueChange={setSelectedChapter} disabled={!selectedBook}>
+                <Select value={selectedChapter} onValueChange={setSelectedChapter} disabled={!selectedBook || isBatchGenerating}>
                   <SelectTrigger>
                     <SelectValue placeholder="Valitse luku" />
                   </SelectTrigger>
@@ -550,7 +644,7 @@ export default function AdminAudioPage() {
               </div>
               <div className="space-y-2">
                 <Label>Ääni</Label>
-                <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isBatchGenerating}>
                   <SelectTrigger>
                     <SelectValue placeholder="Valitse ääni" />
                   </SelectTrigger>
@@ -561,23 +655,56 @@ export default function AdminAudioPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button 
-                onClick={generateAudio} 
-                disabled={isGenerating || !selectedBook || !selectedChapter}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generoidaan...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Generoi
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={generateAudio} 
+                  disabled={isGenerating || isBatchGenerating || !selectedBook || !selectedChapter}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generoidaan...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Generoi luku
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  onClick={generateBatchAudio} 
+                  disabled={isGenerating || isBatchGenerating || !selectedBook}
+                  variant="secondary"
+                >
+                  {isBatchGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {batchProgress.current}/{batchProgress.total}
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Generoi kaikki luvut
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
+            {isBatchGenerating && (
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Generoidaan: {batchProgress.currentChapter}</span>
+                  <span>{batchProgress.current} / {batchProgress.total}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary rounded-full transition-all duration-300"
+                    style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
