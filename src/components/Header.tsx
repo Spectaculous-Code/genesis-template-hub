@@ -183,6 +183,9 @@ const Header = ({ selectedBook, selectedChapter, onBookSelect, onChapterSelect, 
             <DropdownMenuItem onClick={() => navigate('/profile?tab=historia')}>
               HISTORIA
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/admin/audio')}>
+              AUDIO ADMIN
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
