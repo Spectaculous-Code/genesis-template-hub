@@ -590,36 +590,32 @@ export default function AdminAudioPage() {
           <CardContent>
             {isLoading ? (
               <p className="text-muted-foreground">Ladataan...</p>
-            ) : bookStats.length === 0 ? (
-              <p className="text-muted-foreground">Ei tilastoja saatavilla</p>
+            ) : Object.keys(assetsByBook).length === 0 ? (
+              <p className="text-muted-foreground">Ei vielä generoitua audiota</p>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                {bookStats
-                  .filter(stat => stat.chapters_with_audio > 0)
-                  .sort((a, b) => a.book_order - b.book_order)
-                  .map(stat => (
-                    <div 
-                      key={`${stat.book_name}-${stat.version_code}`}
-                      className="p-2 border rounded-md text-sm"
-                    >
-                      <div className="font-medium truncate" title={stat.book_name}>
-                        {stat.book_name}
+                {Object.entries(assetsByBook)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([bookName, assets]) => {
+                    const versionCode = assets[0]?.version_code || 'unknown';
+                    return (
+                      <div 
+                        key={`${bookName}-${versionCode}`}
+                        className="p-2 border rounded-md text-sm"
+                      >
+                        <div className="font-medium truncate" title={bookName}>
+                          {bookName}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {assets.length} lukua
+                        </div>
+                        <Badge variant="outline" className="mt-1 text-xs">
+                          {versionCode}
+                        </Badge>
                       </div>
-                      <div className="text-muted-foreground">
-                        {stat.chapters_with_audio} / {stat.total_chapters} lukua
-                      </div>
-                      <div className="mt-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary rounded-full"
-                          style={{ width: `${(stat.chapters_with_audio / stat.total_chapters) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
-            )}
-            {bookStats.filter(s => s.chapters_with_audio > 0).length === 0 && !isLoading && (
-              <p className="text-muted-foreground">Ei vielä generoitua audiota</p>
             )}
           </CardContent>
         </Card>
