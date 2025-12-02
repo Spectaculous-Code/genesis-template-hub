@@ -87,8 +87,9 @@ export default function AdminAudioPage() {
   };
 
   const loadStatsManually = async () => {
-    // Get all books with chapter counts
-    const { data: books } = await supabase
+    // Get all books with chapter counts from bible_schema
+    const { data: books } = await (supabase as any)
+      .schema('bible_schema')
       .from('books')
       .select(`
         id,
@@ -107,13 +108,14 @@ export default function AdminAudioPage() {
 
     const chapterSet = new Set(audioChapters?.map(a => a.chapter_id) || []);
 
-    // Get chapter IDs for each book
-    const { data: chapters } = await supabase
+    // Get chapter IDs for each book from bible_schema
+    const { data: chapters } = await (supabase as any)
+      .schema('bible_schema')
       .from('chapters')
       .select('id, book_id');
 
     const bookChapterMap = new Map<string, string[]>();
-    chapters?.forEach(c => {
+    chapters?.forEach((c: any) => {
       const existing = bookChapterMap.get(c.book_id) || [];
       existing.push(c.id);
       bookChapterMap.set(c.book_id, existing);
@@ -140,22 +142,24 @@ export default function AdminAudioPage() {
 
     const chapterIds = [...new Set(assets.map(a => a.chapter_id))];
     
-    // Get chapter details
-    const { data: chapters } = await supabase
+    // Get chapter details from bible_schema
+    const { data: chapters } = await (supabase as any)
+      .schema('bible_schema')
       .from('chapters')
       .select('id, chapter_number, book_id')
       .in('id', chapterIds);
 
-    const bookIds = [...new Set(chapters?.map(c => c.book_id) || [])];
+    const bookIds = [...new Set(chapters?.map((c: any) => c.book_id) || [])];
     
-    // Get book names
-    const { data: books } = await supabase
+    // Get book names from bible_schema
+    const { data: books } = await (supabase as any)
+      .schema('bible_schema')
       .from('books')
       .select('id, name')
       .in('id', bookIds);
 
-    const chapterMap = new Map(chapters?.map(c => [c.id, c]) || []);
-    const bookMap = new Map(books?.map(b => [b.id, b.name]) || []);
+    const chapterMap = new Map<string, any>(chapters?.map((c: any) => [c.id, c]) || []);
+    const bookMap = new Map<string, string>(books?.map((b: any) => [b.id, b.name]) || []);
 
     // Get cues count per audio
     const { data: cuesCounts } = await supabase
@@ -173,8 +177,8 @@ export default function AdminAudioPage() {
       
       return {
         ...asset,
-        book_name: bookName,
-        chapter_number: chapter?.chapter_number,
+        book_name: bookName as string | undefined,
+        chapter_number: chapter?.chapter_number as number | undefined,
         cues_count: cuesCountMap.get(asset.id) || 0
       };
     });
