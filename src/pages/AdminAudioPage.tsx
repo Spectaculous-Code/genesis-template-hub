@@ -199,60 +199,79 @@ export default function AdminAudioPage() {
   };
 
   const loadStatsManually = async () => {
-    // Get all books with chapter counts from bible_schema
-    const { data: books } = await (supabase as any)
-      .schema('bible_schema')
-      .from('books')
-      .select(`
-        id,
-        name,
-        book_order,
-        chapters_count,
-        version_id,
-        bible_versions!inner(code)
-      `)
-      .order('book_order');
+    try {
+      // Get all books from bible_schema
+      const { data: books, error: booksError } = await (supabase as any)
+        .schema('bible_schema')
+        .from('books')
+        .select('id, name, book_order, chapters_count, version_id')
+        .order('book_order');
 
-    // Get chapters that have audio
-    const { data: audioChapters } = await supabase
-      .from('audio_assets')
-      .select('chapter_id, version_code');
+      if (booksError) {
+        console.error('Books query error:', booksError);
+        return;
+      }
 
-    const chapterSet = new Set(audioChapters?.map(a => a.chapter_id) || []);
+      // Get all versions
+      const { data: versions } = await (supabase as any)
+        .schema('bible_schema')
+        .from('bible_versions')
+        .select('id, code');
 
-    // Get chapter IDs for each book from bible_schema
-    const { data: chapters } = await (supabase as any)
-      .schema('bible_schema')
-      .from('chapters')
-      .select('id, book_id');
+      const versionMap = new Map<string, string>(versions?.map((v: any) => [v.id, v.code]) || []);
 
-    const bookChapterMap = new Map<string, string[]>();
-    chapters?.forEach((c: any) => {
-      const existing = bookChapterMap.get(c.book_id) || [];
-      existing.push(c.id);
-      bookChapterMap.set(c.book_id, existing);
-    });
+      // Get chapters that have audio
+      const { data: audioChapters, error: audioError } = await supabase
+        .from('audio_assets')
+        .select('chapter_id, version_id');
 
-    const stats: BookStats[] = (books || []).map((book: any) => {
-      const bookChapters = bookChapterMap.get(book.id) || [];
-      const chaptersWithAudio = bookChapters.filter(cid => chapterSet.has(cid)).length;
-      
-      return {
-        book_name: book.name,
-        book_order: book.book_order,
-        total_chapters: book.chapters_count,
-        chapters_with_audio: chaptersWithAudio,
-        version_code: book.bible_versions?.code || 'unknown'
-      };
-    });
+      if (audioError) {
+        console.error('Audio query error:', audioError);
+      }
 
-    setBookStats(stats);
+      const chapterSet = new Set(audioChapters?.map(a => a.chapter_id) || []);
+
+      // Get chapter IDs for each book from bible_schema
+      const { data: chapters, error: chaptersError } = await (supabase as any)
+        .schema('bible_schema')
+        .from('chapters')
+        .select('id, book_id');
+
+      if (chaptersError) {
+        console.error('Chapters query error:', chaptersError);
+      }
+
+      const bookChapterMap = new Map<string, string[]>();
+      chapters?.forEach((c: any) => {
+        const existing = bookChapterMap.get(c.book_id) || [];
+        existing.push(c.id);
+        bookChapterMap.set(c.book_id, existing);
+      });
+
+      const stats: BookStats[] = (books || []).map((book: any) => {
+        const bookChapters = bookChapterMap.get(book.id) || [];
+        const chaptersWithAudio = bookChapters.filter(cid => chapterSet.has(cid)).length;
+        
+        return {
+          book_name: book.name,
+          book_order: book.book_order,
+          total_chapters: book.chapters_count,
+          chapters_with_audio: chaptersWithAudio,
+          version_code: versionMap.get(book.version_id) || 'unknown'
+        };
+      });
+
+      setBookStats(stats);
+    } catch (error) {
+      console.error('loadStatsManually error:', error);
+    }
   };
 
   const enrichAudioAssets = async (assets: AudioAsset[]): Promise<AudioAssetWithDetails[]> => {
     if (assets.length === 0) return [];
 
     const chapterIds = [...new Set(assets.map(a => a.chapter_id))];
+    const versionIds = [...new Set(assets.map(a => a.version_id))];
     
     // Get chapter details from bible_schema
     const { data: chapters } = await (supabase as any)
@@ -270,8 +289,16 @@ export default function AdminAudioPage() {
       .select('id, name')
       .in('id', bookIds);
 
+    // Get version codes from bible_schema
+    const { data: versions } = await (supabase as any)
+      .schema('bible_schema')
+      .from('bible_versions')
+      .select('id, code')
+      .in('id', versionIds);
+
     const chapterMap = new Map<string, any>(chapters?.map((c: any) => [c.id, c]) || []);
     const bookMap = new Map<string, string>(books?.map((b: any) => [b.id, b.name]) || []);
+    const versionMap = new Map<string, string>(versions?.map((v: any) => [v.id, v.code]) || []);
 
     // Get cues count per audio
     const { data: cuesCounts } = await supabase
@@ -286,11 +313,13 @@ export default function AdminAudioPage() {
     return assets.map(asset => {
       const chapter = chapterMap.get(asset.chapter_id);
       const bookName = chapter ? bookMap.get(chapter.book_id) : undefined;
+      const versionCode = versionMap.get(asset.version_id) || asset.version_code;
       
       return {
         ...asset,
         book_name: bookName as string | undefined,
         chapter_number: chapter?.chapter_number as number | undefined,
+        version_code: versionCode as string | null,
         cues_count: cuesCountMap.get(asset.id) || 0
       };
     });
