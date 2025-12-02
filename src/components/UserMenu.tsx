@@ -1,4 +1,4 @@
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, Settings, Music } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -51,6 +51,12 @@ const UserMenu = () => {
         <DropdownMenuItem disabled>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/admin/audio">
+            <Music className="mr-2 h-4 w-4" />
+            <span>Audio Admin</span>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={signOut}>
